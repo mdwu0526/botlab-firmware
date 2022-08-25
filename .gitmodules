@@ -1,3 +1,0 @@
-[submodule "lib/pico-sdk"]
-	path = lib/pico-sdk
-	url = https://gitlab.umich.edu/um-rob330-slam/rob330-f22/pico-sdk

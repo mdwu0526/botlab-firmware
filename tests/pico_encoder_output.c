@@ -30,7 +30,7 @@ int main() {
         total2 = rc_encoder_read_count(3);
 
         // Display on /dev/ttyACM0
-        printf("\033[2A\r| Delta L | Delta R | Total L | Total R |\n\r| %7d | %7d | %7d | %7d |", new_value0, new_value2, total0, total2);
+        printf("\033[2A\r| Delta L | Delta R | Total L | Total R |\n\r| %7d , %7d , %7d , %7d ", new_value0, new_value2, total0, total2);
     }
     
     return 0;

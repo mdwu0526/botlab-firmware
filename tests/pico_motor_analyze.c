@@ -6,16 +6,24 @@
 #include <hardware/adc.h>
 
 #define INT_16_MAX 32768
-#define ENCODER_RESOLUTION 48.0
-#define GEAR_RATIO 20.4
+#define ENCODER_RESOLUTION 20.0
+#define GEAR_RATIO 20.0
 #define TIMESTEP_S 1.5
 #define NUM_POINTS 25
+
+#define LEFT_ENC_POL 1
+#define RIGHT_ENC_POL -1
+#define LEFT_MOTOR_POL -1
+#define RIGHT_MOTOR_POL 1
+
+#define WHEEL_DIAMETER 0.08 // diameter of wheel in meters
+#define PI 3.141592653589793
 
 void blink();
 
 int main() {
     const float I_conversion_factor = 2 * 3.3f / (1 << 12);
-    const float RPM_conversion_factor = 60.0 / (GEAR_RATIO * TIMESTEP_S * ENCODER_RESOLUTION);
+    const float RPM_conversion_factor = 60.0 / (GEAR_RATIO * TIMESTEP_S * ENCODER_RESOLUTION); // why is this multplied by 60?
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
     adc_init();
@@ -25,16 +33,17 @@ int main() {
     rc_motor_init();
     rc_encoder_init();
     blink();
+    sleep(1000*TIMESTEP_S);
     printf("\nTesting motor 1...\n");
     int32_t d = 0;
     int encoder_reading;
     float current_reading;
     float wheel_speed;
-    printf("\nDuty\tSpeed\tCurrent\n");
+    printf("\nDuty (PWM),Speed\n");
     adc_select_input(0);
     for (; d < INT_16_MAX; d += INT_16_MAX/NUM_POINTS) {
         rc_motor_set(1, d);
-        encoder_reading = -rc_encoder_read_delta(1);
+        encoder_reading = LEFT_ENC_POL * rc_encoder_read_delta(1);
         wheel_speed = RPM_conversion_factor * encoder_reading;
         current_reading = 0.0;
         for(int i=0; i<10; i++){

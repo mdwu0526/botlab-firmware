@@ -10,4 +10,3 @@ git checkout master
 git pull
 cd ../../
 echo "[Setup] Done!"
-

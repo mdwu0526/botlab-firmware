@@ -42,7 +42,7 @@ int main() {
     adc_select_input(0);
     for (; d < INT_16_MAX; d += INT_16_MAX/NUM_POINTS) {
         rc_motor_set(1, LEFT_MOTOR_POL*d);
-        rc_motor_set(3, RIGHT_MOTOR_POL*d);
+        rc_motor_set(3, -1*RIGHT_MOTOR_POL*d);
         encoder_reading_l = LEFT_ENC_POL * rc_encoder_read_delta(1);
         encoder_reading_r = RIGHT_ENC_POL * rc_encoder_read_delta(3);
         wheel_speed_l = RPM_conversion_factor * encoder_reading_l;

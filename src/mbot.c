@@ -92,7 +92,6 @@ bool timer_cb(repeating_timer_t *rt)
         uint64_t cur_pico_time = to_us_since_boot(get_absolute_time()) + timestamp_offset;
         uint64_t latency_time = cur_pico_time - current_pico_time;
         current_pico_time = cur_pico_time;
-        printf("start cycle...\r\n");
         // first, get the IMU data and send across the wire
         current_imu.utime = cur_pico_time; // received_time.utime;
         current_imu.accel[0] = mpu_data.accel[0];
@@ -133,15 +132,19 @@ bool timer_cb(repeating_timer_t *rt)
         {
             /*************************************************************
              * TODO: 
-             *  - Week 3: Section X.X
+             *  - Week 3: Section 3.2.1
              *      - Implement the open loop motor controller to compute the left
              *          and right wheel commands
+             *      - Convert the duty to a motor command using the following equation:
+             *                  cmd = duty * 0.95 * pow(2,15);
              *  - Week 3: Section X.Y
              *      - Implement the closed loop motor controller to compute the left
              *          and right wheel commands
              * 
              ************************************************************/
             int16_t l_cmd, r_cmd;
+            float l_vel, r_vel;
+            float l_duty, r_duty;
             /*************************************************************
              * End of TODO
              *************************************************************/
@@ -157,7 +160,6 @@ bool timer_cb(repeating_timer_t *rt)
         // write the IMU to serial
         comms_write_topic(MBOT_IMU, &current_imu);
         uint64_t fn_run_len = to_us_since_boot(get_absolute_time()) + timestamp_offset - cur_pico_time;
-        printf("end cycle, runtime = %" PRIu64 ", latency = %" PRIu64 "\r\n", fn_run_len, latency_time);
     }
 
     return true;

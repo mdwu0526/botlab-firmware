@@ -120,7 +120,7 @@ pico_enable_stdio_usb(pico_encoder_test 1)
 pico_enable_stdio_uart(pico_encoder_test 0)
 pico_add_extra_outputs(pico_encoder_test)
 
-#Encoder tests
+#Encoder output
 add_executable(pico_encoder_output
   pico_encoder_output.c
 )
@@ -134,3 +134,18 @@ target_link_libraries(pico_encoder_output
 pico_enable_stdio_usb(pico_encoder_output 1)
 pico_enable_stdio_uart(pico_encoder_output 0)
 pico_add_extra_outputs(pico_encoder_output)
+
+#Drive robot
+add_executable(test_driving
+  test_driving.c
+)
+target_link_libraries(test_driving
+  pico_stdlib
+  pico_multicore
+  hardware_pio
+  hardware_pwm
+  rclib
+)
+pico_enable_stdio_usb(test_driving 1)
+pico_enable_stdio_uart(test_driving 0)
+pico_add_extra_outputs(test_driving)

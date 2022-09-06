@@ -6,7 +6,7 @@
 
 #define INT_16_MAX 32768
 
-void drive_motor_up_down(int);
+void drive_motor_up_down(int motor);
 void blink();
 
 int main() {

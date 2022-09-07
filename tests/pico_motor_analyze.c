@@ -16,7 +16,7 @@
 #define LEFT_MOTOR_POL 1
 #define RIGHT_MOTOR_POL 1
 
-#define WHEEL_DIAMETER 0.101 // diameter of wheel in meters
+#define WHEEL_DIAMETER 0.084 // diameter of wheel in meters
 #define PI 3.141592653589793
 
 void blink();

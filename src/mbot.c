@@ -18,23 +18,14 @@
 
 #include <math.h>
 #include <inttypes.h>
+#include "mbot.h"
 
 #define LED_PIN 25
 #define MAIN_LOOP_HZ 50.0 // 50 hz loop
 #define MAIN_LOOP_PERIOD (1.0f / MAIN_LOOP_HZ)
 
-#define LEFT_ENC_POL 1
-#define RIGHT_ENC_POL 1
-#define LEFT_MOTOR_POL 1
-#define RIGHT_MOTOR_POL 1
-
 #define LEFT_MOTOR_CHANNEL 1
 #define RIGHT_MOTOR_CHANNEL 3
-
-#define WHEEL_RADIUS 0.0505
-#define GEAR_RATIO 78.0
-#define ENCODER_RES 20.0
-#define WHEEL_BASE 0.15 // wheel separation distance in meters
 
 // taken from my old botlab code
 #define SLOPE_L 1.0
@@ -48,17 +39,7 @@ static mb_mpu_data_t mpu_data;
 uint64_t timestamp_offset = 0;
 uint64_t current_pico_time = 0;
 
-// data to hold the IMU results
-mbot_imu_t current_imu = {0};
-// data to hold the received timestamp
-timestamp_t received_time = {0};
-// current odometry state
-odometry_t current_odom = {0};
-// current encoder states
-mbot_encoder_t current_encoders = {0};
-float _meters_per_tick = ((2.0 * PI * WHEEL_RADIUS) / (GEAR_RATIO * ENCODER_RES));
-// current body frame command
-mbot_motor_command_t current_cmd = {0};
+float enc2meters = ((2.0 * PI * WHEEL_RADIUS) / (GEAR_RATIO * ENCODER_RES));
 
 void timestamp_cb(timestamp_t *received_timestamp)
 {
@@ -94,16 +75,6 @@ bool timer_cb(repeating_timer_t *rt)
         current_pico_time = cur_pico_time;
         // first, get the IMU data and send across the wire
         current_imu.utime = cur_pico_time; // received_time.utime;
-        current_imu.accel[0] = mpu_data.accel[0];
-        current_imu.accel[1] = mpu_data.accel[1];
-        current_imu.accel[2] = mpu_data.accel[2];
-        current_imu.gyro[0] = mpu_data.gyro[0];
-        current_imu.gyro[1] = mpu_data.gyro[1];
-        current_imu.gyro[2] = mpu_data.gyro[2];
-        current_imu.tb[0] = mpu_data.dmp_TaitBryan[0];
-        current_imu.tb[1] = mpu_data.dmp_TaitBryan[1];
-        current_imu.tb[2] = mpu_data.dmp_TaitBryan[2];
-        current_imu.temperature = mpu_data.temp;
 
         // read the encoders
         int enc_cnt_l = LEFT_ENC_POL * rc_encoder_read_count(LEFT_MOTOR_CHANNEL);
@@ -118,7 +89,7 @@ bool timer_cb(repeating_timer_t *rt)
 
         // compute new odometry
         /*************************************************************
-         * TODO: 
+         * TODO:
          *  - Week 4: Secion X.X
          *      - Populate the odometry messages
          *************************************************************/
@@ -130,25 +101,56 @@ bool timer_cb(repeating_timer_t *rt)
         // get the current motor command state (if we have one)
         if (comms_get_topic_data(MBOT_MOTOR_COMMAND, &current_cmd))
         {
-            /*************************************************************
-             * TODO: 
-             *  - Week 3: Section 3.2.1
-             *      - Implement the open loop motor controller to compute the left
-             *          and right wheel commands
-             *      - Convert the duty to a motor command using the following equation:
-             *                  cmd = duty * 0.95 * pow(2,15);
-             *  - Week 3: Section X.Y
-             *      - Implement the closed loop motor controller to compute the left
-             *          and right wheel commands
-             * 
-             ************************************************************/
-            int16_t l_cmd, r_cmd;
-            float l_vel, r_vel;
-            float l_duty, r_duty;
-            /*************************************************************
-             * End of TODO
-             *************************************************************/
+            int16_t l_cmd, r_cmd;      // left and right motor commands
+            float left_sp, right_sp;   // speed in m/s
+            float left_pwm, right_pwm; // pwm in range [-1, 1]
+            if (OPEN_LOOP)
+            {
+                /*************************************************************
+                 * TODO:
+                 *  - Week 3: Section 3.2.1.3
+                 *      - Implement the open loop motor controller to compute the left
+                 *          and right wheel commands
+                 *          - Compute the target velocity using calibration data
+                 *      - Convert the PWM to a motor command using the following equation:
+                 *                  cmd = PWM * 0.95 * pow(2,15);
+                 ************************************************************/
 
+                /*************************************************************
+                 * End of TODO
+                 *************************************************************/
+            }
+            else
+            {
+                /*************************************************************
+                 * TODO:
+                 *  - Week 3: Section 3.3.1.2
+                 *      - Implement the closed loop motor controller to compute the left
+                 *          and right wheel commands
+                 *      - To calculate the measured velocity, use MAIN_LOOP_PERIOD or latency_time
+                 *          as the timestep
+                 *      - We recommend to use the open loop controller as part of the closed loop to improve
+                 *          performance
+                 *      - Make sure that the left and right PWM commands are in the range [-1, 1]
+                 *  - Week 3: Section 3.3.2.2
+                 *      - Compute the error between the target and measured translation+rotation velocity
+                 *      - Compute the new forward and rotation setpoints that will be used in 
+                 *          the wheel speed PID (these should be written in lines above 
+                 *          the previous controller)
+                 *      - Update and the fwd_sp and turn_sp variables for this.
+                 *
+                 ************************************************************/
+                float fwd_sp, turn_sp;
+
+                // Example closed loop controller
+                //      (assuming the error between the target and measured is computed)
+                // float pid_delta_vel = rc_filter_march(&pid_filter, error);
+                // float desired_vel = commanded_val + pid_delta_vel;
+
+                /*************************************************************
+                 * End of TODO
+                 *************************************************************/
+            }
             rc_motor_set(LEFT_MOTOR_CHANNEL, l_cmd);
             rc_motor_set(RIGHT_MOTOR_CHANNEL, r_cmd);
         }
@@ -241,10 +243,61 @@ int main()
     add_repeating_timer_ms(MAIN_LOOP_PERIOD * 1000, timer_cb, NULL, &loop_timer); // 1000x to convert to ms
 
     printf("Done Booting Up!\n\n");
+    /*************************************************************
+     * TODO:
+     *  - Week 3: Secion 3.3.1.2 (wheel speed PID)
+     *      - Initilize the PID Filters rc_filter_empty()
+     *      - Set the PID gains rc_filter_pid()
+     *  - Week 3: Section 3.3.2.2 (body frame velocity PID)
+     *      - Initialize the PID filters for translation and rotation vel
+     *      - Set the PID gains for translation and rotation vel
+     *
+     * Use the values from mbot.h to fill these
+     *************************************************************/
+
+    // Example initialization
+    // rc_filter_t my_filter = rc_filter_empty();
+
+    // Example of assigning PID parameters (using pid_parameters_t from mbot.h)
+    // rc_filter_pid(&my_filter,
+    //             pid_params.kp,
+    //             pid_params.ki,
+    //             pid_params.kd,
+    //             1.0 / pid_params.dFilterHz,
+    //             1.0 / MAIN_LOOP_HZ);
+
+    // Example of setting limits to the output of the filter
+    // rc_filter_enable_saturation(&my_filter, min_val, max_val);
+
+    /*************************************************************
+     * End of TODO
+     *************************************************************/
+
+    if (OPEN_LOOP)
+    {
+        printf("Running in open loop mode\n");
+    }
+    else
+    {
+        printf("Running in closed loop mode\n");
+    }
 
     while (running)
     {
-        // spin
+        printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   \n\r|      %7lld      |%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v);
         int asdf = 1;
     }
+}
+
+/**
+ * @brief Clamp duty cycle between -1 and 1. If not applied, robot drives in reverse only
+ *
+ * @param duty
+ */
+float clamp_duty(float duty)
+{
+    if (duty > 1.0)
+        return 1.0;
+    if (duty < -1.0)
+        return -1.0;
 }

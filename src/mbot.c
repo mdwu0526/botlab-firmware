@@ -145,8 +145,8 @@ bool timer_cb(repeating_timer_t *rt)
                  *      - Update and the fwd_sp and turn_sp variables for this.
                  *
                  ************************************************************/
-                float fwd_sp, turn_sp, left_sp, right_sp;
-                float measured_vel_fwd, measured_vel_turn;
+                float fwd_sp, turn_sp; // forward and turn setpoints in m/s and rad/s
+                float measured_vel_fwd, measured_vel_turn; // measured forward and turn velocities in m/s and rad/s
 
                 /**
                  *  Example closed loop controller

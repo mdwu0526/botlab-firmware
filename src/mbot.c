@@ -101,9 +101,11 @@ bool timer_cb(repeating_timer_t *rt)
         // get the current motor command state (if we have one)
         if (comms_get_topic_data(MBOT_MOTOR_COMMAND, &current_cmd))
         {
-            int16_t l_cmd, r_cmd;      // left and right motor commands
-            float left_sp, right_sp;   // speed in m/s
-            float left_pwm, right_pwm; // pwm in range [-1, 1]
+            int16_t l_cmd, r_cmd;                 // left and right motor commands
+            float left_sp, right_sp;              // speed in m/s
+            float measured_vel_l, measured_vel_r; // measured velocity in m/s
+            float l_duty, r_duty;                 // duty cycle in range [-1, 1]
+            float dt = MAIN_LOOP_PERIOD;          // time since last update in seconds
             if (OPEN_LOOP)
             {
                 /*************************************************************
@@ -111,9 +113,8 @@ bool timer_cb(repeating_timer_t *rt)
                  *  - Week 3: Section 3.2.1.3
                  *      - Implement the open loop motor controller to compute the left
                  *          and right wheel commands
-                 *          - Compute the target velocity using calibration data
-                 *      - Convert the PWM to a motor command using the following equation:
-                 *                  cmd = PWM * 0.95 * pow(2,15);
+                 *      - Determine the setpoint velocities for left and right motor using the wheel velocity model
+                 *      - To compute the measured velocities, use dt as the timestep (∆t)
                  ************************************************************/
 
                 /*************************************************************
@@ -130,27 +131,44 @@ bool timer_cb(repeating_timer_t *rt)
                  *      - To calculate the measured velocity, use MAIN_LOOP_PERIOD or latency_time
                  *          as the timestep
                  *      - We recommend to use the open loop controller as part of the closed loop to improve
-                 *          performance
-                 *      - Make sure that the left and right PWM commands are in the range [-1, 1]
+                 *          performance.
+                 *          Example: open_loop_control(LEFT_MOTOR_CHANNEL, left_sp)
+                 *      - To use the PID filters defined in mbot.h and main() function to calculate desired
+                 *          duty, use rc_filter_march() function.
+                 *          Example: rc_filter_march(&left_pid, left_error)
+                 * TODO:
                  *  - Week 3: Section 3.3.2.2
                  *      - Compute the error between the target and measured translation+rotation velocity
-                 *      - Compute the new forward and rotation setpoints that will be used in 
-                 *          the wheel speed PID (these should be written in lines above 
+                 *      - Compute the new forward and rotation setpoints that will be used in
+                 *          the wheel speed PID (these should be written in lines above
                  *          the previous controller)
                  *      - Update and the fwd_sp and turn_sp variables for this.
                  *
                  ************************************************************/
-                float fwd_sp, turn_sp;
+                float fwd_sp, turn_sp, left_sp, right_sp;
+                float measured_vel_fwd, measured_vel_turn;
 
-                // Example closed loop controller
-                //      (assuming the error between the target and measured is computed)
-                // float pid_delta_vel = rc_filter_march(&pid_filter, error);
-                // float desired_vel = commanded_val + pid_delta_vel;
+                /**
+                 *  Example closed loop controller
+                 *      (assuming the error between the target and measured is computed)
+                 *
+                 * float pid_delta_vel = rc_filter_march(&pid_filter, error);
+                 * float desired_vel = commanded_val + pid_delta_vel;
+                 */
 
                 /*************************************************************
                  * End of TODO
                  *************************************************************/
             }
+            // Clamp duty cycle to [-1, 1]
+            l_duty = clamp_duty(l_duty);
+            r_duty = clamp_duty(r_duty);
+
+            // duty to motor command
+            l_cmd = LEFT_MOTOR_POL * (int)(l_duty * 0.95 * pow(2, 15));
+            r_cmd = RIGHT_MOTOR_POL * (int)(r_duty * 0.95 * pow(2, 15));
+
+            // set left and right motor command
             rc_motor_set(LEFT_MOTOR_CHANNEL, l_cmd);
             rc_motor_set(RIGHT_MOTOR_CHANNEL, r_cmd);
         }
@@ -248,15 +266,15 @@ int main()
      *  - Week 3: Secion 3.3.1.2 (wheel speed PID)
      *      - Initilize the PID Filters rc_filter_empty()
      *      - Set the PID gains rc_filter_pid()
+     * TODO:
      *  - Week 3: Section 3.3.2.2 (body frame velocity PID)
      *      - Initialize the PID filters for translation and rotation vel
      *      - Set the PID gains for translation and rotation vel
      *
-     * Use the values from mbot.h to fill these
      *************************************************************/
 
-    // Example initialization
-    // rc_filter_t my_filter = rc_filter_empty();
+    // Example initialization of a PID filter defined in mbot.h
+    // my_filter = rc_filter_empty();
 
     // Example of assigning PID parameters (using pid_parameters_t from mbot.h)
     // rc_filter_pid(&my_filter,
@@ -284,8 +302,7 @@ int main()
 
     while (running)
     {
-        printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   \n\r|      %7lld      |%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v);
-        int asdf = 1;
+        printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   \n\r|%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v);
     }
 }
 

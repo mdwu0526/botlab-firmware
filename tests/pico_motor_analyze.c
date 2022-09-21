@@ -44,12 +44,12 @@ int main() {
         // Drive the robot clockwise
         rc_motor_set(1, LEFT_MOTOR_POL*d);
         rc_motor_set(3, -RIGHT_MOTOR_POL*d);
+        sleep_ms(1000*TIMESTEP_S);
         encoder_reading_l = LEFT_ENC_POL * rc_encoder_read_delta(1);
         encoder_reading_r = RIGHT_ENC_POL * rc_encoder_read_delta(3);
         wheel_speed_l = enc2meter_s * encoder_reading_l;
         wheel_speed_r = enc2meter_s * encoder_reading_r;
         printf("%f,%f,%f\n", (float)d/(float)INT_16_MAX, wheel_speed_l, wheel_speed_r);
-        sleep_ms(1000*TIMESTEP_S);
     }
     rc_motor_set(1, 0);
     rc_motor_set(3, 0);

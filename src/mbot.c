@@ -120,7 +120,6 @@ bool timer_cb(repeating_timer_t *rt)
     if (comms_get_topic_data(MBOT_PIDS, &mbot_pid_gains))
     {
         uint64_t msg_time = current_pico_time;
-        printf("Received PID values!");
         // Print the PID values
         printf("Left: %f, %f, %f, %f", mbot_pid_gains.motor_a_kp,
                       mbot_pid_gains.motor_a_ki,
@@ -229,10 +228,11 @@ bool timer_cb(repeating_timer_t *rt)
                  *          and right wheel commands
                  *      - To calculate the measured velocity, use MAIN_LOOP_PERIOD or latency_time
                  *          as the timestep
+                 *      - Compute the error between the setpoint velocity and the measured velocity
                  *      - We recommend to use the open loop controller as part of the closed loop to improve
                  *          performance.
                  *          Example: open_loop_control(LEFT_MOTOR_CHANNEL, left_sp)
-                 *      - To use the PID filters defined in mbot.h and main() function to calculate desired
+                 *      - Use the PID filters defined in mbot.h and main() function to calculate desired
                  *          duty, use rc_filter_march() function.
                  *          Example: rc_filter_march(&left_pid, left_error)
                  * TODO:

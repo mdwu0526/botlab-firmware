@@ -31,7 +31,7 @@ typedef struct topic_registry_entry{
     struct topic_registry_val* value;
 }topic_registry_entry_t;
 
-topic_registry_entry_t* topic_registry_root_node;
+extern topic_registry_entry_t* topic_registry_root_node;
 
 int comms_init_protocol(void);
 int comms_register_topic(uint16_t topic_id,

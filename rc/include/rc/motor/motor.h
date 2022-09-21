@@ -26,7 +26,7 @@ typedef enum rc_motor_state {ON, OFF} rc_motor_state;
 int rc_motor_init();
 int rc_motor_init_freq(uint f);
 int rc_motor_cleanup();
-int rc_motor_set(uint ch, int16_t duty);
+int rc_motor_set(uint ch, int32_t duty);
 int rc_motor_free_spin(uint ch);
 int rc_motor_brake(uint ch);
 

@@ -57,7 +57,21 @@ int mbot_encoder_t_serialize(mbot_encoder_t* src, uint8_t* dest)
 }
 
 /*
-mbot_encoder_t commands serialize/deserialize
+omni_encoder_t commands serialize/deserialize
+*/
+int omni_encoder_t_deserialize(uint8_t* src, omni_encoder_t* dest)
+{
+    memcpy(dest, src, sizeof(omni_encoder_t));
+    return 1;
+}
+int omni_encoder_t_serialize(omni_encoder_t* src, uint8_t* dest)
+{
+    memcpy(dest, src, sizeof(omni_encoder_t));
+    return 1;
+}
+
+/*
+mbot_motor_command_t commands serialize/deserialize
 */
 int mbot_motor_command_t_deserialize(uint8_t* src, mbot_motor_command_t* dest)
 {
@@ -67,5 +81,33 @@ int mbot_motor_command_t_deserialize(uint8_t* src, mbot_motor_command_t* dest)
 int mbot_motor_command_t_serialize(mbot_motor_command_t* src, uint8_t* dest)
 {
     memcpy(dest, src, sizeof(mbot_motor_command_t));
+    return 1;
+}
+
+/*
+omni_motor_command_t commands serialize/deserialize
+*/
+int omni_motor_command_t_deserialize(uint8_t* src, omni_motor_command_t* dest)
+{
+    memcpy(dest, src, sizeof(omni_motor_command_t));
+    return 1;
+}
+int omni_motor_command_t_serialize(omni_motor_command_t* src, uint8_t* dest)
+{
+    memcpy(dest, src, sizeof(omni_motor_command_t));
+    return 1;
+}
+
+/*
+mbot_pid_gains_t commands serialize/deserialize
+*/
+int mbot_pid_gains_t_deserialize(uint8_t* src, mbot_pid_gains_t* dest)
+{
+    memcpy(dest, src, sizeof(mbot_pid_gains_t));
+    return 1;
+}
+int mbot_pid_gains_t_serialize(mbot_pid_gains_t* src, uint8_t* dest)
+{
+    memcpy(dest, src, sizeof(mbot_pid_gains_t));
     return 1;
 }

@@ -51,22 +51,114 @@ void timestamp_cb(timestamp_t *received_timestamp)
     }
 }
 
+void reset_encoders_cb(mbot_encoder_t *received_encoder_vals)
+{
+    rc_encoder_write(LEFT_MOTOR_CHANNEL, received_encoder_vals->leftticks);
+    rc_encoder_write(RIGHT_MOTOR_CHANNEL, received_encoder_vals->rightticks);
+}
+
+void reset_odometry_cb(odometry_t *received_odom)
+{
+    current_odom.utime = received_odom->utime;
+    current_odom.x = received_odom->x;
+    current_odom.y = received_odom->y;
+    current_odom.theta = received_odom->theta;
+}
+
+int write_pid_coefficients(i2c_inst_t *i2c)
+{
+    uint8_t pid_bytes[PID_VALUES_LEN];
+    memcpy(pid_bytes, &mbot_pid_gains, PID_VALUES_LEN);
+    return mb_write_fram(i2c, PID_VALUES_ADDR, PID_VALUES_LEN, &pid_bytes[0]);
+}
+
+void pid_values_cb(mbot_pid_gains_t *received_pid_gains)
+{
+    memcpy(&mbot_pid_gains, received_pid_gains, sizeof(mbot_pid_gains_t));
+    write_pid_coefficients(i2c);
+}
+
 void register_topics()
 {
     // timesync topic
     comms_register_topic(MBOT_TIMESYNC, sizeof(timestamp_t), (Deserialize)&timestamp_t_deserialize, (Serialize)&timestamp_t_serialize, (MsgCb)&timestamp_cb);
     // odometry topic
     comms_register_topic(ODOMETRY, sizeof(odometry_t), (Deserialize)&odometry_t_deserialize, (Serialize)&odometry_t_serialize, NULL);
+    // reset odometry topic
+    comms_register_topic(RESET_ODOMETRY, sizeof(odometry_t), (Deserialize)&odometry_t_deserialize, (Serialize)&odometry_t_serialize, (MsgCb)&reset_odometry_cb);
     // IMU topic
     comms_register_topic(MBOT_IMU, sizeof(mbot_imu_t), (Deserialize)&mbot_imu_t_deserialize, (Serialize)&mbot_imu_t_serialize, NULL);
     // encoders topic
     comms_register_topic(MBOT_ENCODERS, sizeof(mbot_encoder_t), (Deserialize)&mbot_encoder_t_deserialize, (Serialize)&mbot_encoder_t_serialize, NULL);
+    // reset encoders topic
+    comms_register_topic(RESET_ENCODERS, sizeof(mbot_encoder_t), (Deserialize)&mbot_encoder_t_deserialize, (Serialize)&mbot_encoder_t_serialize, (MsgCb)&reset_encoders_cb);
     // motor commands topic
     comms_register_topic(MBOT_MOTOR_COMMAND, sizeof(mbot_motor_command_t), (Deserialize)&mbot_motor_command_t_deserialize, (Serialize)&mbot_motor_command_t_serialize, NULL);
+    // PID values topic
+    comms_register_topic(MBOT_PIDS, sizeof(mbot_pid_gains_t), (Deserialize)&mbot_pid_gains_t_deserialize, (Serialize)&mbot_pid_gains_t_serialize, (MsgCb)&pid_values_cb);
+}
+
+void read_pid_coefficients(i2c_inst_t *i2c)
+{
+    uint8_t pid_bytes[PID_VALUES_LEN];
+
+    if (mb_read_fram(i2c, PID_VALUES_ADDR, PID_VALUES_LEN, pid_bytes) > 0)
+    {
+        printf("reading fram success.\n");
+        memcpy(&mbot_pid_gains, pid_bytes, PID_VALUES_LEN);
+        printf("read gains from fram!\r\n");
+    }
+    else
+    {
+        printf("reading PID gains from fram failure.\n");
+    }
 }
 
 bool timer_cb(repeating_timer_t *rt)
 {
+    // Read the PID values
+    if (comms_get_topic_data(MBOT_PIDS, &mbot_pid_gains))
+    {
+        uint64_t msg_time = current_pico_time;
+        printf("Received PID values!");
+        // Print the PID values
+        printf("Left: %f, %f, %f, %f", mbot_pid_gains.motor_a_kp,
+                      mbot_pid_gains.motor_a_ki,
+                      mbot_pid_gains.motor_a_kd,
+                      1.0 / mbot_pid_gains.motor_a_Tf);
+
+        // update the PID gains of the left motor PID controller
+        rc_filter_pid(&left_pid,
+                      mbot_pid_gains.motor_a_kp,
+                      mbot_pid_gains.motor_a_ki,
+                      mbot_pid_gains.motor_a_kd,
+                      1.0 / mbot_pid_gains.motor_a_Tf,
+                      1.0 / MAIN_LOOP_HZ);
+
+        // update the PID gains of the right motor PID controller
+        rc_filter_pid(&right_pid,
+                      mbot_pid_gains.motor_c_kp,
+                      mbot_pid_gains.motor_c_ki,
+                      mbot_pid_gains.motor_c_kd,
+                      1.0 / mbot_pid_gains.motor_c_Tf,
+                      1.0 / MAIN_LOOP_HZ);
+
+        // update the PID gains of the body frame controller
+        rc_filter_pid(&fwd_vel_pid,
+                      mbot_pid_gains.bf_trans_kp,
+                      mbot_pid_gains.bf_trans_ki,
+                      mbot_pid_gains.bf_trans_kd,
+                      1.0 / mbot_pid_gains.bf_trans_Tf,
+                      1.0 / MAIN_LOOP_HZ);
+
+        // update the PID gains of the body frame rotation controller
+        rc_filter_pid(&turn_vel_pid,
+                      mbot_pid_gains.bf_rot_kp,
+                      mbot_pid_gains.bf_rot_ki,
+                      mbot_pid_gains.bf_rot_kd,
+                      1.0 / mbot_pid_gains.bf_rot_Tf,
+                      1.0 / MAIN_LOOP_HZ);
+    }
     // only run if we've received a timesync message...
     if (comms_get_topic_data(MBOT_TIMESYNC, &received_time))
     {

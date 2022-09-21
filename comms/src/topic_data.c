@@ -1,5 +1,7 @@
 #include "comms/topic_data.h"
 
+topic_data_entry_t* topic_data_root_node;
+
 int comms_init_topic_data(void)
 {
     topic_data_root_node = (topic_data_entry_t*)calloc(1, sizeof(topic_data_entry_t));

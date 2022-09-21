@@ -320,9 +320,10 @@ int main()
  */
 float clamp_duty(float duty)
 {
-    if (duty > 1.0)
+    if (duty > 1.0){
         return 1.0;
-    if (duty < -1.0)
+    }
+    else if (duty < -1.0){
         return -1.0;
     return duty;
 }

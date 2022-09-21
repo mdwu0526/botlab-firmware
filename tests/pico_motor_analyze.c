@@ -8,7 +8,7 @@
 #define INT_16_MAX 32768
 #define ENCODER_RESOLUTION 20.0
 #define GEAR_RATIO 78.0
-#define TIMESTEP_S 1.5
+#define TIMESTEP_S 1.0
 #define NUM_POINTS 25
 
 #define LEFT_ENC_POL 1

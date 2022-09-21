@@ -33,7 +33,7 @@
 #define LEFT_MOTOR_POL 1
 #define RIGHT_MOTOR_POL 1
 
-// TODO: Populate with calibration data
+// TODO: Populate with calibration data (recommended to generate these for reverse direction as well)
 #define SLOPE_L 1.0
 #define SLOPE_R 1.0
 #define INTERCEPT_L -0.0
@@ -69,18 +69,36 @@ mbot_encoder_t current_encoders = {0};
 // current body frame command
 mbot_motor_command_t current_cmd = {0};
 
-/**
- * Example filter and PID parameter initialization
- * 
- * rc_filter_t my_filter;
- * 
- * pid_parameters_t pid_params = {
- *    .kp = 1.0,
- *    .ki = 0.0,
- *    .kd = 0.0,
- *    .dFilterHz = 25.0
- * };
- */
+rc_filter_t left_pid;
+rc_filter_t right_pid;
+rc_filter_t fwd_vel_pid;
+rc_filter_t turn_vel_pid;
+
+pid_parameters_t left_pid_params = {
+    .kp = 1.0,
+    .ki = 0.0,
+    .kd = 0.0,
+    .dFilterHz = 25.0,
+};
+pid_parameters_t right_pid_params = {
+    .kp = 1.0,
+    .ki = 0.0,
+    .kd = 0.0,
+    .dFilterHz = 25.0,
+};
+pid_parameters_t fwd_vel_pid_params = {
+    .kp = 1.0,
+    .ki = 0.0,
+    .kd = 0.0,
+    .dFilterHz = 10.0,
+};
+pid_parameters_t turn_vel_pid_params = {
+    .kp = 1.0,
+    .ki = 0.0,
+    .kd = 0.0,
+    .dFilterHz = 10.0,
+};
+
 
 float clamp_duty(float duty);
 

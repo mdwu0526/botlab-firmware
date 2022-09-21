@@ -304,7 +304,7 @@ int main()
     const uint scl_pin = 5;
 
     // Ports
-    i2c_inst_t *i2c = i2c0;
+    i2c = i2c0;
     // Initialize I2C port at 400 kHz
     i2c_init(i2c, 400 * 1000);
     // Initialize I2C pins

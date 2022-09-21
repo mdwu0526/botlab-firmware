@@ -27,12 +27,6 @@
 #define LEFT_MOTOR_CHANNEL 1
 #define RIGHT_MOTOR_CHANNEL 3
 
-// taken from my old botlab code
-#define SLOPE_L 1.0
-#define SLOPE_R 1.0
-#define INTERCEPT_L -0.0
-#define INTERCEPT_R -0.0
-
 // data to hold current mpu state
 static mb_mpu_data_t mpu_data;
 

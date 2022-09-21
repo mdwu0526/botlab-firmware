@@ -8,6 +8,9 @@
 #include <rc/motor/motor.h>
 #include <rc/encoder/encoder.h>
 #include <rc/motor/motor.h>
+#include <rc/defs/common_defs.h>
+#include <rc/defs/mbot_diff_defs.h>
+#include <rc/fram/fram.h>
 #include <rc/math/filter.h>
 #include <rc/mpu/mpu.h>
 #include <comms/common.h>
@@ -23,8 +26,9 @@
 #define WHEEL_RADIUS 0.042
 #define GEAR_RATIO 78.0
 #define ENCODER_RES 20.0
-#define WHEEL_BASE 0.15  // wheel separation distance in meters
-#define MAX_FWD_VEL 0.8  // max forward speed (m/s)
+#define WHEEL_BASE 0.15 // wheel separation distance in meters
+#define MAX_FWD_VEL 0.8 // max forward speed (m/s)
+#define MESSAGE_CONFIRMATION_CHANNEL "MSG_CONFIRM"
 #define MAX_TURN_VEL 2.5 // max turning speed (rad/s)
 
 // TODO: Enter the polarity values for your motors and encoders
@@ -44,8 +48,15 @@
 
 // data to hold current mpu state (not used)
 static mb_mpu_data_t mpu_data;
+static i2c_inst_t *i2c;
 
 uint64_t timestep_us = 0;
+
+// data to hold calibration coefficients
+float coeffs[4];
+
+// data to hold the PID values
+static mbot_pid_gains_t mbot_pid_gains;
 
 typedef struct pid_parameters pid_parameters_t;
 struct pid_parameters
@@ -68,6 +79,19 @@ odometry_t current_odom = {0};
 mbot_encoder_t current_encoders = {0};
 // current body frame command
 mbot_motor_command_t current_cmd = {0};
+
+/**
+ * Example filter and PID parameter initialization
+ *
+ * rc_filter_t my_filter;
+ *
+ * pid_parameters_t pid_params = {
+ *    .kp = 1.0,
+ *    .ki = 0.0,
+ *    .kd = 0.0,
+ *    .dFilterHz = 25.0
+ * };
+ */
 
 rc_filter_t left_pid;
 rc_filter_t right_pid;
@@ -98,7 +122,6 @@ pid_parameters_t turn_vel_pid_params = {
     .kd = 0.0,
     .dFilterHz = 10.0,
 };
-
 
 float clamp_duty(float duty);
 

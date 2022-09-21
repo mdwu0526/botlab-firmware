@@ -27,7 +27,7 @@ typedef struct topic_data_entry{
     struct topic_data_val* value;
 }topic_data_entry_t;
 
-topic_data_entry_t* topic_data_root_node;
+extern topic_data_entry_t* topic_data_root_node;
 
 int comms_init_topic_data(void);
 int comms_get_topic_data(uint16_t topic_id, void* msg_struct);

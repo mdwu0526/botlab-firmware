@@ -22,6 +22,8 @@ add_library(rclib STATIC
   src/current/current.c
   # FRAM chip
   src/fram/fram.c
+  # DEFS
+  src/defs/mbot_defs.c
 )
 
 target_link_libraries(rclib

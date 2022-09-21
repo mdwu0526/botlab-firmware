@@ -1,5 +1,7 @@
 #include <comms/protocol.h>
 
+topic_registry_entry_t* topic_registry_root_node;
+
 int comms_init_protocol(void)
 {
     topic_registry_root_node = (topic_registry_entry_t*)calloc(1, sizeof(topic_registry_entry_t));

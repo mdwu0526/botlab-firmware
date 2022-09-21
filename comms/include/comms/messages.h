@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <memory.h>
+// #include <memory.h>
+#include <string.h>
 #include <pico/binary_info.h> 
 
 #ifndef MESSAGES_H

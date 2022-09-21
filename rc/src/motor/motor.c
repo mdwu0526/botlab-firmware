@@ -94,15 +94,17 @@ int rc_motor_cleanup() {
 //  motor = The motor channel (1-3) or 0 for all channels.
 //  duty = -2^15 (signed short lower limit) for full reverse, 2^15 (signed short upper limit) for full forward.
 //  Returns 0 on success, -1 on failure
-int rc_motor_set(uint ch, int16_t duty) {
+int rc_motor_set(uint ch, int32_t duty) {
     unsigned int slice, channel, direction;
     
+    if (duty < -32768) duty = -32768;
+    else if (duty > 32767) duty = 32767;
+
     switch (ch) {
         case 0:
             gpio_put(M0_DIR_PIN, duty >= 0);
             gpio_put(M1_DIR_PIN, duty >= 0);
             gpio_put(M2_DIR_PIN, duty >= 0);
-            
             duty *= (duty < 0) ? -1 : 1;
             
             pwm_set_chan_level(M0_SLICE, M0_CHAN, (unsigned int) WRAP * duty / 32768);

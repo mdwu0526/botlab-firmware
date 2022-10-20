@@ -1,4 +1,4 @@
-#include <comms/messages_mb.h>
+#include <comms/mbot_messages.h>
 
 /*
 timestamp_t commands serialize/deserialize

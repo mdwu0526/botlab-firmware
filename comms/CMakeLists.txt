@@ -4,7 +4,7 @@ add_library(comms STATIC
   src/listener.c
   src/topic_data.c
   #src/messages.c
-  src/messages_mb.c
+  src/mbot_messages.c
 )
 
 target_link_libraries(comms

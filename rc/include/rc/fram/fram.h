@@ -5,7 +5,7 @@
  *
  * @return     0 on success or -1 on failure.
  */
-//int mb_();
+//int rc_();
 
 #include <stdio.h>
 #include <stdint.h>
@@ -34,7 +34,7 @@
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_initialize_fram(i2c_inst_t* i2c);
+int rc_initialize_fram(i2c_inst_t* i2c);
 
 /**
  * @brief
@@ -43,7 +43,7 @@ int mb_initialize_fram(i2c_inst_t* i2c);
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_read_fram(i2c_inst_t* i2c, uint16_t addr, size_t length, uint8_t* data);
+int rc_read_fram(i2c_inst_t* i2c, uint16_t addr, size_t length, uint8_t* data);
 
 /**
  * @brief
@@ -52,7 +52,7 @@ int mb_read_fram(i2c_inst_t* i2c, uint16_t addr, size_t length, uint8_t* data);
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_write_fram(i2c_inst_t* i2c, uint16_t addr, size_t length, uint8_t* data);
+int rc_write_fram(i2c_inst_t* i2c, uint16_t addr, size_t length, uint8_t* data);
 
 /**
  * @brief
@@ -61,7 +61,7 @@ int mb_write_fram(i2c_inst_t* i2c, uint16_t addr, size_t length, uint8_t* data);
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_read_word_fram(i2c_inst_t* i2c, uint16_t addr, uint16_t* data);
+int rc_read_word_fram(i2c_inst_t* i2c, uint16_t addr, uint16_t* data);
 
 /**
  * @brief
@@ -70,7 +70,7 @@ int mb_read_word_fram(i2c_inst_t* i2c, uint16_t addr, uint16_t* data);
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_write_word_fram(i2c_inst_t* i2c, uint16_t addr, uint16_t data);
+int rc_write_word_fram(i2c_inst_t* i2c, uint16_t addr, uint16_t data);
 
 /**
  * @brief
@@ -79,4 +79,4 @@ int mb_write_word_fram(i2c_inst_t* i2c, uint16_t addr, uint16_t data);
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_erase_fram(i2c_inst_t* i2c);
+int rc_erase_fram(i2c_inst_t* i2c);

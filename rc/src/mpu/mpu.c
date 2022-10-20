@@ -1,8 +1,5 @@
 /*
-TODO:
-	save config to flash
-	load config from flash
-	calibration routines
+
 */
 
 #include <stdlib.h>
@@ -24,7 +21,7 @@ TODO:
 /**
 *	Local variables
 **/
-static mb_mpu_config_t config;
+static rc_mpu_config_t config;
 static int bypass_en;
 static int dmp_en=1;
 static int packet_len;
@@ -37,7 +34,7 @@ static double accel_lengths[3];
 //static int last_read_successful;
 //static uint64_t last_interrupt_timestamp_nanos;
 //static uint64_t last_tap_timestamp_nanos;
-static mb_mpu_data_t* data_ptr;
+static rc_mpu_data_t* data_ptr;
 static int imu_shutdown_flag = 0;
 static rc_filter_t low_pass, high_pass; // for magnetometer Yaw filtering
 static int was_last_steady = 0;
@@ -61,10 +58,10 @@ int __i2c_mag_write_byte(i2c_inst_t* i2c, uint8_t addr, uint8_t data);
 // from original rclib mpu.c
 static int __reset_mpu(i2c_inst_t* i2c);
 static int __check_who_am_i(void);
-static int __set_gyro_fsr(mb_mpu_gyro_fsr_t fsr, mb_mpu_data_t* data);
-static int __set_accel_fsr(mb_mpu_accel_fsr_t, mb_mpu_data_t* data);
-static int __set_gyro_dlpf(mb_mpu_gyro_dlpf_t dlpf);
-static int __set_accel_dlpf(mb_mpu_accel_dlpf_t dlpf);
+static int __set_gyro_fsr(rc_mpu_gyro_fsr_t fsr, rc_mpu_data_t* data);
+static int __set_accel_fsr(rc_mpu_accel_fsr_t, rc_mpu_data_t* data);
+static int __set_gyro_dlpf(rc_mpu_gyro_dlpf_t dlpf);
+static int __set_accel_dlpf(rc_mpu_accel_dlpf_t dlpf);
 static int __init_magnetometer(int cal_mode);
 static int __power_off_magnetometer(void);
 static int __mpu_set_bypass(uint8_t bypass_on);
@@ -98,18 +95,18 @@ static int __write_gyro_cal_to_memory(i2c_inst_t* i2c, int16_t offsets[3]);
 static int __write_mag_cal_to_memory(i2c_inst_t* i2c, double offsets[3], double scale[3]);
 static int __write_accel_cal_to_memory(i2c_inst_t* i2c, double* center, double* lengths);
 static void* __dmp_interrupt_handler(void* ptr);
-static int __read_dmp_fifo(mb_mpu_data_t* data);
-static int __data_fusion(mb_mpu_data_t* data);
+static int __read_dmp_fifo(rc_mpu_data_t* data);
+static int __data_fusion(rc_mpu_data_t* data);
 static int __mag_correct_orientation(double mag_vec[3]);
 
-mb_mpu_config_t mb_mpu_default_config(void)
+rc_mpu_config_t rc_mpu_default_config(void)
 {
-	mb_mpu_config_t conf;
+	rc_mpu_config_t conf;
 
 	// connectivity
-	conf.gpio_interrupt_pin = MB_MPU_INTERRUPT_GPIO;
+	conf.gpio_interrupt_pin = rc_MPU_INTERRUPT_GPIO;
 	conf.i2c_bus = i2c0;
-	conf.i2c_addr = MB_MPU_DEFAULT_I2C_ADDR;
+	conf.i2c_addr = rc_MPU_DEFAULT_I2C_ADDR;
 	conf.show_warnings = 0;
 
 	// general stuff
@@ -132,13 +129,13 @@ mb_mpu_config_t mb_mpu_default_config(void)
 	return conf;
 }
 
-int mb_mpu_set_config_to_default(mb_mpu_config_t *conf)
+int rc_mpu_set_config_to_default(rc_mpu_config_t *conf)
 {
-	*conf = mb_mpu_default_config();
+	*conf = rc_mpu_default_config();
 	return 0;
 }
 
-int mb_mpu_read_accel(mb_mpu_data_t *data)
+int rc_mpu_read_accel(rc_mpu_data_t *data)
 {
 	// new register data stored here
 	uint8_t raw[6];
@@ -157,7 +154,7 @@ int mb_mpu_read_accel(mb_mpu_data_t *data)
 	return 0;
 }
 
-int mb_mpu_read_gyro(mb_mpu_data_t *data)
+int rc_mpu_read_gyro(rc_mpu_data_t *data)
 {
 	// new register data stored here
 	uint8_t raw[6];
@@ -177,14 +174,14 @@ int mb_mpu_read_gyro(mb_mpu_data_t *data)
 }
 
 //TODO:
-int mb_mpu_read_mag(mb_mpu_data_t* data)
+int rc_mpu_read_mag(rc_mpu_data_t* data)
 {
 	uint8_t raw[7];
 	int16_t adc[3];
 	double factory_cal_data[3];
 	if(!config.enable_magnetometer){
 		printf("ERROR: can't read magnetometer unless it is enabled in \n");
-		printf("mb_mpu_config_t struct before calling mb_mpu_initialize\n");
+		printf("rc_mpu_config_t struct before calling rc_mpu_initialize\n");
 		return -1;
 	}
 
@@ -206,7 +203,7 @@ int mb_mpu_read_mag(mb_mpu_data_t* data)
 	}
 	// Read the six raw data regs into data array
 	if(unlikely(__i2c_mag_read_bytes(config.i2c_bus,AK8963_XOUT_L,7,&raw[0])<0)){
-		printf("ERROR: mb_mpu_read_mag failed to read data register\n");
+		printf("ERROR: rc_mpu_read_mag failed to read data register\n");
 		return -1;
 	}
 	// check if the readings saturated such as because
@@ -242,7 +239,7 @@ int mb_mpu_read_mag(mb_mpu_data_t* data)
 	return 0;
 }
 
-int mb_mpu_read_temp(mb_mpu_data_t* data)
+int rc_mpu_read_temp(rc_mpu_data_t* data)
 {
 	uint16_t adc;
 	// Read the two raw data registers
@@ -260,11 +257,11 @@ int mb_mpu_read_temp(mb_mpu_data_t* data)
 **/
 int __i2c_read_bytes(i2c_inst_t* i2c, uint8_t addr, size_t length, uint8_t* data)
 {
-    if(i2c_write_blocking(i2c, MB_MPU_DEFAULT_I2C_ADDR, &addr, 1, true) == PICO_ERROR_GENERIC){
+    if(i2c_write_blocking(i2c, rc_MPU_DEFAULT_I2C_ADDR, &addr, 1, true) == PICO_ERROR_GENERIC){
 		return -1;
 	}
 
-	int bytes_read = i2c_read_blocking(i2c, MB_MPU_DEFAULT_I2C_ADDR, data, length, false);
+	int bytes_read = i2c_read_blocking(i2c, rc_MPU_DEFAULT_I2C_ADDR, data, length, false);
     if( bytes_read == PICO_ERROR_GENERIC){
 		return -1;
 	}
@@ -289,7 +286,7 @@ int __i2c_write_bytes(i2c_inst_t* i2c, uint8_t addr, size_t length, uint8_t* dat
 	uint8_t buf[length+1];
 	buf[0] = addr;
 	for(int i=0; i<length; i++) buf[i+1]=data[i];
-	if(i2c_write_blocking(i2c, MB_MPU_DEFAULT_I2C_ADDR, &buf[0], length+1, false) == PICO_ERROR_GENERIC){
+	if(i2c_write_blocking(i2c, rc_MPU_DEFAULT_I2C_ADDR, &buf[0], length+1, false) == PICO_ERROR_GENERIC){
 		printf("ERROR: failed to write to mpu\n");
 		return -1;
 	}
@@ -376,7 +373,7 @@ int __i2c_mag_write_word(i2c_inst_t* i2c, uint8_t addr, uint16_t data)
 int __reset_mpu(i2c_inst_t* i2c) {
     // Two byte reset. First byte register, second byte data
     // In this case, we set bit 7 (H_RESET) to reset the internal registers & restore default settings
-    //int written = i2c_write_blocking(i2c, MB_MPU_DEFAULT_I2C_ADDR, buf, 2, false);
+    //int written = i2c_write_blocking(i2c, rc_MPU_DEFAULT_I2C_ADDR, buf, 2, false);
 	// write the reset bit
 	if(__i2c_write_byte(i2c, PWR_MGMT_1, H_RESET)==-1){
 		// wait and try again
@@ -410,7 +407,7 @@ int __check_who_am_i(void)
 	return 0;
 }
 
-int __set_accel_fsr(mb_mpu_accel_fsr_t fsr, mb_mpu_data_t* data)
+int __set_accel_fsr(rc_mpu_accel_fsr_t fsr, rc_mpu_data_t* data)
 {
 	uint8_t c;
 	switch(fsr){
@@ -437,7 +434,7 @@ int __set_accel_fsr(mb_mpu_accel_fsr_t fsr, mb_mpu_data_t* data)
 	return __i2c_write_byte(config.i2c_bus, ACCEL_CONFIG, c);
 }
 
-int __set_gyro_fsr(mb_mpu_gyro_fsr_t fsr, mb_mpu_data_t* data)
+int __set_gyro_fsr(rc_mpu_gyro_fsr_t fsr, rc_mpu_data_t* data)
 {
 	uint8_t c;
 	switch(fsr){
@@ -464,7 +461,7 @@ int __set_gyro_fsr(mb_mpu_gyro_fsr_t fsr, mb_mpu_data_t* data)
 	return __i2c_write_byte(config.i2c_bus, GYRO_CONFIG, c);
 }
 
-int __set_accel_dlpf(mb_mpu_accel_dlpf_t dlpf)
+int __set_accel_dlpf(rc_mpu_accel_dlpf_t dlpf)
 {
 	uint8_t c = ACCEL_FCHOICE_1KHZ | BIT_FIFO_SIZE_1024;
 	switch(dlpf){
@@ -499,7 +496,7 @@ int __set_accel_dlpf(mb_mpu_accel_dlpf_t dlpf)
 	return __i2c_write_byte(config.i2c_bus, ACCEL_CONFIG_2, c);
 }
 
-int __set_gyro_dlpf(mb_mpu_gyro_dlpf_t dlpf)
+int __set_gyro_dlpf(rc_mpu_gyro_dlpf_t dlpf)
 {
 	uint8_t c = FIFO_MODE_REPLACE_OLD;
 	switch(dlpf){
@@ -601,7 +598,7 @@ int __power_off_magnetometer(void)
 	return 0;
 }
 
-int mb_mpu_power_off(void)
+int rc_mpu_power_off(void)
 {
 	imu_shutdown_flag = 1;
 	// shutdown magnetometer first if on since that requires
@@ -629,7 +626,7 @@ int mb_mpu_power_off(void)
 	return 0;
 }
 
-int mb_mpu_initialize_dmp(mb_mpu_data_t *data, mb_mpu_config_t conf)
+int rc_mpu_initialize_dmp(rc_mpu_data_t *data, rc_mpu_config_t conf)
 {
 	int i;
 	uint8_t tmp;
@@ -692,7 +689,7 @@ int mb_mpu_initialize_dmp(mb_mpu_data_t *data, mb_mpu_config_t conf)
 	// this is also set in set_accel_dlpf but we set here early on
 	tmp = BIT_FIFO_SIZE_1024 | 0x8;
 	if(__i2c_write_byte(config.i2c_bus, ACCEL_CONFIG_2, tmp)){
-		printf("ERROR: in mb_mpu_initialize_dmp, failed to write to ACCEL_CONFIG_2 register\n");
+		printf("ERROR: in rc_mpu_initialize_dmp, failed to write to ACCEL_CONFIG_2 register\n");
 		return -1;
 	}
 	// load in calibration offsets from disk
@@ -709,11 +706,11 @@ int mb_mpu_initialize_dmp(mb_mpu_data_t *data, mb_mpu_config_t conf)
 	// at 2000DPS. I'll assume the same is true for accel and use 2G like their
 	// example
 	if(__set_gyro_fsr(config.gyro_fsr, data_ptr)==-1){
-		printf( "ERROR in mb_mpu_initialize_dmp, failed to set gyro_fsr register\n");
+		printf( "ERROR in rc_mpu_initialize_dmp, failed to set gyro_fsr register\n");
 		return -1;
 	}
 	if(__set_accel_fsr(config.accel_fsr, data_ptr)==-1){
-		printf( "ERROR in mb_mpu_initialize_dmp, failed to set accel_fsr register\n");
+		printf( "ERROR in rc_mpu_initialize_dmp, failed to set accel_fsr register\n");
 		return -1;
 	}
 
@@ -747,7 +744,7 @@ int mb_mpu_initialize_dmp(mb_mpu_data_t *data, mb_mpu_config_t conf)
 			printf("ERROR: failed to initialize_magnetometer\n");
 			return -1;
 		}
-		if(mb_mpu_read_mag(data)==-1){
+		if(rc_mpu_read_mag(data)==-1){
 			printf("ERROR: failed to initialize_magnetometer\n");
 			return -1;
 		}
@@ -756,7 +753,7 @@ int mb_mpu_initialize_dmp(mb_mpu_data_t *data, mb_mpu_config_t conf)
 		double y_sum = 0.0;
 		double mag_vec[3];
 		for(i=0;i<20;i++){
-			mb_mpu_read_mag(data);
+			rc_mpu_read_mag(data);
 			// correct for orientation and put data into mag_vec
 			if(__mag_correct_orientation(mag_vec)) return -1;
 			x_sum += mag_vec[0];
@@ -827,7 +824,7 @@ int mb_mpu_initialize_dmp(mb_mpu_data_t *data, mb_mpu_config_t conf)
 	}
 	
 	__mpu_reset_fifo();
-	//gpio_set_irq_enabled_with_callback(MB_MPU_INTERRUPT_GPIO, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &mb_dmp_callback);
+	//gpio_set_irq_enabled_with_callback(rc_MPU_INTERRUPT_GPIO, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &rc_dmp_callback);
 	sleep_us(500);
 	return 0;
 
@@ -1389,7 +1386,7 @@ int __dmp_set_shake_reject_timeout(unsigned short time)
  * This is mostly taken from the Invensense DMP code and serves to turn on and
  * off DMP features based on the feature mask. We modified to remove some
  * irrelevant features and set our own fifo-length variable. This probably isn't
- * necessary to remain in its current form as mb_mpu_initialize_dmp uses a fixed
+ * necessary to remain in its current form as rc_mpu_initialize_dmp uses a fixed
  * set of features but we keep it as is since it works fine.
  *
  * @param[in]  mask  The mask
@@ -1578,7 +1575,7 @@ int __mpu_set_sample_rate(int rate)
 
 /**
  * This turns on and off the DMP interrupt and resets the FIFO. This probably
- * isn't necessary as mb_mpu_initialize_dmp sets these registers but it remains
+ * isn't necessary as rc_mpu_initialize_dmp sets these registers but it remains
  * here as a vestige of the invensense open source dmp code.
  *
  * @param[in]  enable  The enable
@@ -1622,7 +1619,7 @@ int __mpu_set_dmp_state(uint8_t enable)
  *
  * @return     0 on success, -1 on failure
  */
-int mb_mpu_set_dmp_callback(void (*func)(void))
+int rc_mpu_set_dmp_callback(void (*func)(void))
 {
 	if(func==NULL){
 		printf("ERROR: trying to assign NULL pointer to dmp_callback_func\n");
@@ -1633,7 +1630,7 @@ int mb_mpu_set_dmp_callback(void (*func)(void))
 }
 
 //TODO:
-int mb_mpu_set_tap_callback(void (*func)(int dir, int cnt))
+int rc_mpu_set_tap_callback(void (*func)(int dir, int cnt))
 {
 	if(func==NULL){
 		printf("ERROR: trying to assign NULL pointer to tap_callback_func\n");
@@ -1655,7 +1652,7 @@ int mb_mpu_set_tap_callback(void (*func)(int dir, int cnt))
  *
  * @return     0 on success, -1 on failure
  */
-int __read_dmp_fifo(mb_mpu_data_t* data)
+int __read_dmp_fifo(rc_mpu_data_t* data)
 {
 	uint8_t raw[MAX_FIFO_BUFFER];
 	int32_t quat_q14[4], quat[4], quat_mag_sq;
@@ -1875,7 +1872,7 @@ int __read_dmp_fifo(mb_mpu_data_t* data)
  *
  * @return     0 on success, -1 on failure
  */
-int __data_fusion(mb_mpu_data_t* data)
+int __data_fusion(rc_mpu_data_t* data)
 {
 	double tilt_tb[3], tilt_q[4], mag_vec[3];
 	static double newMagYaw = 0;
@@ -1979,7 +1976,7 @@ int __load_gyro_calibration(void)
 	int16_t y = 0;
 	int16_t z = 0; //6 bytes
 
-	mb_read_fram(config.i2c_bus, MPU_GYRO_CONFIG_ADDR, 6, &buf[0]);
+	rc_read_fram(config.i2c_bus, MPU_GYRO_CONFIG_ADDR, 6, &buf[0]);
 	x = (buf[0]<<8) + (buf[1] & 0xFF);
 	y = (buf[2]<<8) + (buf[3] & 0xFF);
 	z = (buf[4]<<8) + (buf[5] & 0xFF);
@@ -2008,14 +2005,14 @@ int __load_gyro_calibration(void)
  *
  * @return     0 on success, -1 on failure
  */
-int mb_print_gyro_calibration(i2c_inst_t* i2c)
+int rc_print_gyro_calibration(i2c_inst_t* i2c)
 {
 	uint8_t buf[6] = {0,0,0,0,0,0};
 	int16_t x = 0;
 	int16_t y = 0;
 	int16_t z = 0; //6 bytes
 	uint16_t addr = MPU_GYRO_CONFIG_ADDR;
-	mb_read_fram(i2c, addr, 6, &buf[0]);
+	rc_read_fram(i2c, addr, 6, &buf[0]);
 	x = (buf[0]<<8) + (buf[1] & 0xFF);
 	y = (buf[2]<<8) + (buf[3] & 0xFF);
 	z = (buf[4]<<8) + (buf[5] & 0xFF);
@@ -2034,7 +2031,7 @@ int __load_mag_calibration(void)
 	uint8_t buf[48];
 	double x,y,z,sx,sy,sz; //48 bytes
 
-	mb_read_fram(config.i2c_bus, MPU_MAG_CONFIG_ADDR, 48, &buf[0]);
+	rc_read_fram(config.i2c_bus, MPU_MAG_CONFIG_ADDR, 48, &buf[0]);
 	memcpy(&x, &buf[0], sizeof(x));
 	memcpy(&y, &buf[8], sizeof(y));
 	memcpy(&z, &buf[16], sizeof(z));
@@ -2042,7 +2039,7 @@ int __load_mag_calibration(void)
 	memcpy(&sy, &buf[32], sizeof(sy));
 	memcpy(&sz, &buf[40], sizeof(sz));
 
-	// write to global variables for use by mb_mpu_read_mag
+	// write to global variables for use by rc_mpu_read_mag
 	mag_offsets[0]=x;
 	mag_offsets[1]=y;
 	mag_offsets[2]=z;
@@ -2068,7 +2065,7 @@ int __load_accel_calibration(void)
 
 	x=0; y=0; z=0;
 	sx=1; sy=1; sz=1;
-	mb_read_fram(config.i2c_bus, MPU_ACCEL_CONFIG_ADDR, 48, buf);
+	rc_read_fram(config.i2c_bus, MPU_ACCEL_CONFIG_ADDR, 48, buf);
 	memcpy(&x, &buf[0], sizeof(double));
 	memcpy(&y, &buf[8], sizeof(double));
 	memcpy(&z, &buf[16], sizeof(double));
@@ -2148,7 +2145,7 @@ int __write_gyro_cal_to_memory(i2c_inst_t* i2c, int16_t offsets[3])
 	data[3] = (offsets[1])      & 0xFF;
 	data[4] = (offsets[2] >> 8) & 0xFF;
 	data[5] = (offsets[2])      & 0xFF;
-	int ret = mb_write_fram(i2c, MPU_GYRO_CONFIG_ADDR, 6, &data[0]);
+	int ret = rc_write_fram(i2c, MPU_GYRO_CONFIG_ADDR, 6, &data[0]);
 	return ret;
 }
 
@@ -2166,7 +2163,7 @@ int __write_mag_cal_to_memory(i2c_inst_t* i2c, double offsets[3], double scale[3
 	uint8_t data[48];
 	memcpy(&data[0], offsets, 24);
 	memcpy(&data[24], scale, 24);
-	int ret = mb_write_fram(i2c, MPU_MAG_CONFIG_ADDR, 48, &data[0]);
+	int ret = rc_write_fram(i2c, MPU_MAG_CONFIG_ADDR, 48, &data[0]);
 	return ret;
 }
 
@@ -2184,11 +2181,11 @@ int __write_accel_cal_to_memory(i2c_inst_t* i2c, double* center, double* lengths
 	uint8_t data[48];
 	memcpy(&data[0], center, 24);
 	memcpy(&data[24], lengths, 24);
-	int ret = mb_write_fram(i2c, MPU_ACCEL_CONFIG_ADDR, 48, data);
+	int ret = rc_write_fram(i2c, MPU_ACCEL_CONFIG_ADDR, 48, data);
 	return ret;
 }
 
-int mb_mpu_reset_accel_cal(i2c_inst_t* i2c)
+int rc_mpu_reset_accel_cal(i2c_inst_t* i2c)
 {
 	double center[3] = {0.0, 0.0, 0.0};
 	double lengths[3] = {1.0, 1.0, 1.0};
@@ -2250,7 +2247,7 @@ static int __mag_correct_orientation(double mag_vec[3])
 	return 0;
 }
 
-int mb_mpu_calibrate_gyro_routine(mb_mpu_config_t conf)
+int rc_mpu_calibrate_gyro_routine(rc_mpu_config_t conf)
 {
 	uint8_t c, data[6];
 	int32_t gyro_sum[3] = {0, 0, 0};
@@ -2265,7 +2262,7 @@ int mb_mpu_calibrate_gyro_routine(mb_mpu_config_t conf)
 
 	// reset device, reset all registers
 	if(__reset_mpu(conf.i2c_bus)==-1){
-		printf("ERROR in mb_mpu_calibrate_gyro_routine, failed to reset MPU9250\n");
+		printf("ERROR in rc_mpu_calibrate_gyro_routine, failed to reset MPU9250\n");
 		return -1;
 	}
 
@@ -2413,7 +2410,7 @@ COLLECT_DATA:
 	return 0;
 }
 
-int mb_mpu_calibrate_mag_routine(mb_mpu_config_t conf)
+int rc_mpu_calibrate_mag_routine(rc_mpu_config_t conf)
 {
 	int i;
 	double new_scale[3];
@@ -2425,9 +2422,9 @@ int mb_mpu_calibrate_mag_routine(mb_mpu_config_t conf)
 	rc_matrix_t A = rc_matrix_empty();
 	rc_vector_t center = rc_vector_empty();
 	rc_vector_t lengths = rc_vector_empty();
-	mb_mpu_data_t imu_data; // to collect magnetometer data
+	rc_mpu_data_t imu_data; // to collect magnetometer data
 	// wipe it with defaults to avoid problems
-	config = mb_mpu_default_config();
+	config = rc_mpu_default_config();
 	// configure with user's i2c bus info
 	config.enable_magnetometer = 1;
 	config.i2c_bus = conf.i2c_bus;
@@ -2462,7 +2459,7 @@ int mb_mpu_calibrate_mag_routine(mb_mpu_config_t conf)
 	// sample data
 	i = 0;
 	while(i<samples){
-		if(mb_mpu_read_mag(&imu_data)<0){
+		if(rc_mpu_read_mag(&imu_data)<0){
 			printf("ERROR: failed to read magnetometer\n");
 			break;
 		}
@@ -2491,7 +2488,7 @@ int mb_mpu_calibrate_mag_routine(mb_mpu_config_t conf)
 		sleep_us(loop_wait_us);
 	}
 	// done with I2C for now
-	mb_mpu_power_off();
+	rc_mpu_power_off();
 
 	printf("\n\nOkay Stop!\n");
 	printf("Calculating calibration constants.....\n");
@@ -2596,7 +2593,7 @@ int __collect_accel_samples(int* avg_raw)
 	for (i=0; i<samples; i++) {
 		// read data for averaging
 		if(__i2c_read_bytes(config.i2c_bus, FIFO_R_W, 6, data)<0){
-			printf("ERROR in mb_mpu_calibrate_accel_routine, failed to read FIFO\n");
+			printf("ERROR in rc_mpu_calibrate_accel_routine, failed to read FIFO\n");
 			return -1;
 		}
 		x = (int16_t)(((int16_t)data[0] << 8) | data[1]) ;
@@ -2645,7 +2642,7 @@ int __collect_accel_samples(int* avg_raw)
 
 }
 
-int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
+int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf)
 {
 	int ret, i, j;
 	int avg_raw[6][3];
@@ -2656,7 +2653,7 @@ int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
 
 	// reset device, reset all registers
 	if(__reset_mpu(config.i2c_bus)<0){
-		printf("ERROR in mb_mpu_calibrate_accel_routine failed to reset MPU9250\n");
+		printf("ERROR in rc_mpu_calibrate_accel_routine failed to reset MPU9250\n");
 		return -1;
 	}
 
@@ -2682,9 +2679,11 @@ int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
 
 	// collect an orientation
 	printf("\nOrient Z pointing up and hold as still as possible\n");
-	printf("When ready, press any key to sample accelerometer\n");
-	getchar();
-	//sleep_ms(5000);
+	for(int timer = 5; timer>0; timer--){
+		printf("%d ", timer);
+		sleep_ms(1000);
+	}
+	printf("\n");
 	ret = 1;
 	was_last_steady=0;
 	while(ret){
@@ -2694,9 +2693,11 @@ int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
 	printf("success\n");
 	// collect an orientation
 	printf("\nOrient Z pointing down and hold as still as possible\n");
-	printf("When ready, press any key to sample accelerometer\n");
-	//sleep_ms(5000);
-	getchar();
+	for(int timer = 5; timer>0; timer--){
+		printf("%d ", timer);
+		sleep_ms(1000);
+	}
+	printf("\n");
 	ret = 1;
 	was_last_steady=0;
 	while(ret){
@@ -2706,9 +2707,11 @@ int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
 	printf("success\n");
 	// collect an orientation
 	printf("\nOrient X pointing up and hold as still as possible\n");
-	printf("When ready, press any key to sample accelerometer\n");
-	getchar();
-	//sleep_ms(5000);
+	for(int timer = 5; timer>0; timer--){
+		printf("%d ", timer);
+		sleep_ms(1000);
+	}
+	printf("\n");
 	ret = 1;
 	was_last_steady=0;
 	while(ret){
@@ -2718,9 +2721,11 @@ int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
 	printf("success\n");
 	// collect an orientation
 	printf("\nOrient X pointing down and hold as still as possible\n");
-	printf("When ready, press any key to sample accelerometer\n");
-	getchar();
-	//sleep_ms(5000);
+	for(int timer = 5; timer>0; timer--){
+		printf("%d ", timer);
+		sleep_ms(1000);
+	}
+	printf("\n");
 	ret = 1;
 	was_last_steady=0;
 	while(ret){
@@ -2730,9 +2735,11 @@ int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
 	printf("success\n");
 	// collect an orientation
 	printf("\nOrient Y pointing up and hold as still as possible\n");
-	printf("When ready, press any key to sample accelerometer\n");
-	getchar();
-	//sleep_ms(5000);
+	for(int timer = 5; timer>0; timer--){
+		printf("%d ", timer);
+		sleep_ms(1000);
+	}
+	printf("\n");
 	ret = 1;
 	was_last_steady=0;
 	while(ret){
@@ -2742,9 +2749,11 @@ int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
 	printf("success\n");
 	// collect an orientation
 	printf("\nOrient Y pointing down and hold as still as possible\n");
-	printf("When ready, press any key to sample accelerometer\n");
-	getchar();
-	//sleep_ms(5000);
+	for(int timer = 5; timer>0; timer--){
+		printf("%d ", timer);
+		sleep_ms(1000);
+	}
+	printf("\n");
 	ret = 1;
 	was_last_steady=0;
 	while(ret){
@@ -2754,7 +2763,7 @@ int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
 	printf("success\n");
 
 	// done with I2C for now
-	mb_mpu_power_off();
+	rc_mpu_power_off();
 
 	// fit the ellipse
 	rc_matrix_t A = rc_matrix_empty();
@@ -2762,7 +2771,7 @@ int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
 	rc_vector_t lengths = rc_vector_empty();
 
 	if(rc_matrix_alloc(&A,6,3)){
-		printf("ERROR: in mb_mpu_calibrate_accel_routine, failed to alloc data matrix\n");
+		printf("ERROR: in rc_mpu_calibrate_accel_routine, failed to alloc data matrix\n");
 		return -1;
 	}
 
@@ -2784,21 +2793,21 @@ int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
 	// do some sanity checks to make sure data is reasonable
 	for(i=0;i<3;i++){
 		if(fabs(center.d[i])>0.3){
-			printf("ERROR in mb_mpu_calibrate_accel_routine, center of fitted ellipsoid out of bounds\n");
+			printf("ERROR in rc_mpu_calibrate_accel_routine, center of fitted ellipsoid out of bounds\n");
 			printf("most likely the unit was held in incorrect orientation during data collection\n");
 			rc_vector_free(&center);
 			rc_vector_free(&lengths);
 			return -1;
 		}
 		if(isnan(center.d[i]) || isnan(lengths.d[i])){
-			printf("ERROR in mb_mpu_calibrate_accel_routine, data fitting produced NaN\n");
+			printf("ERROR in rc_mpu_calibrate_accel_routine, data fitting produced NaN\n");
 			printf("most likely the unit was held in incorrect orientation during data collection\n");
 			rc_vector_free(&center);
 			rc_vector_free(&lengths);
 			return -1;
 		}
 		if(lengths.d[i]>1.3 || lengths.d[i]<0.7){
-			printf("ERROR in mb_mpu_calibrate_accel_routine, scale out of bounds\n");
+			printf("ERROR in rc_mpu_calibrate_accel_routine, scale out of bounds\n");
 			printf("most likely the unit was held in incorrect orientation during data collection\n");
 			rc_vector_free(&center);
 			rc_vector_free(&lengths);
@@ -2817,7 +2826,7 @@ int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
 
 	// write to disk
 	if(__write_accel_cal_to_memory(conf.i2c_bus, center.d, lengths.d)==-1){
-		printf("ERROR in mb_mpu_calibrate_accel_routine, failed to write to disk\n");
+		printf("ERROR in rc_mpu_calibrate_accel_routine, failed to write to disk\n");
 		return -1;
 	}
 	rc_vector_free(&center);
@@ -2825,25 +2834,25 @@ int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf)
 	return 0;
 }
 
-int mb_mpu_is_gyro_calibrated(void)
+int rc_mpu_is_gyro_calibrated(void)
 {
 	if(false) return 1;
 	else return 0;
 }
 
-int mb_mpu_is_mag_calibrated(void)
+int rc_mpu_is_mag_calibrated(void)
 {
 	if(false) return 1;
 	else return 0;
 }
 
-int mb_mpu_is_accel_calibrated(void)
+int rc_mpu_is_accel_calibrated(void)
 {
 	if(false) return 1;
 	else return 0;
 }
 
-void mb_dmp_callback(uint gpio, uint32_t events)
+void rc_dmp_callback(uint gpio, uint32_t events)
 {	
     // if the fifo packet_len not set, this function must have been called prematurely
 	// if(packet_len!=FIFO_LEN_QUAT_ACCEL_GYRO_TAP && packet_len!=FIFO_LEN_QUAT_TAP){
@@ -2855,7 +2864,7 @@ void mb_dmp_callback(uint gpio, uint32_t events)
 
 /*
 * Call to initialize the DMP motion processor
-* note that this is *heavily* based on the mb_mpu_initialize_dmp function in the rc control lib
+* note that this is *heavily* based on the rc_mpu_initialize_dmp function in the rc control lib
 * We need to modify it to use our hardware interfaces, hence why it is rewritten here
 * We don't currently support the kind of configuration that RC Ctrl Lib does, but is part of our TODO
 */
@@ -2868,8 +2877,8 @@ void mpu9250_read_raw(i2c_inst_t* i2c, int16_t accel[3], int16_t gyro[3], int16_
 
     // Start reading acceleration registers from register 0x3B for 6 bytes
     uint8_t val = ACCEL_XOUT_H;
-    i2c_write_blocking(i2c, MB_MPU_DEFAULT_I2C_ADDR, &val, 1, true); // true to keep master control of bus
-    i2c_read_blocking(i2c, MB_MPU_DEFAULT_I2C_ADDR, buffer, 6, false);
+    i2c_write_blocking(i2c, rc_MPU_DEFAULT_I2C_ADDR, &val, 1, true); // true to keep master control of bus
+    i2c_read_blocking(i2c, rc_MPU_DEFAULT_I2C_ADDR, buffer, 6, false);
 
     for (int i = 0; i < 3; i++) {
         accel[i] = (buffer[i * 2] << 8 | buffer[(i * 2) + 1]);
@@ -2878,8 +2887,8 @@ void mpu9250_read_raw(i2c_inst_t* i2c, int16_t accel[3], int16_t gyro[3], int16_
     // Now gyro data from reg 0x43 for 6 bytes
     // The register is auto incrementing on each read
     val = GYRO_XOUT_H;
-    i2c_write_blocking(i2c, MB_MPU_DEFAULT_I2C_ADDR, &val, 1, true);
-    i2c_read_blocking(i2c, MB_MPU_DEFAULT_I2C_ADDR, buffer, 6, false);  // False - finished with bus
+    i2c_write_blocking(i2c, rc_MPU_DEFAULT_I2C_ADDR, &val, 1, true);
+    i2c_read_blocking(i2c, rc_MPU_DEFAULT_I2C_ADDR, buffer, 6, false);  // False - finished with bus
 
     for (int i = 0; i < 3; i++) {
         gyro[i] = (buffer[i * 2] << 8 | buffer[(i * 2) + 1]);
@@ -2888,8 +2897,8 @@ void mpu9250_read_raw(i2c_inst_t* i2c, int16_t accel[3], int16_t gyro[3], int16_
     // Now magnetometer data from reg 0x43 for 6 bytes
     // The register is auto incrementing on each read
     val = AK8963_XOUT_L;
-    i2c_write_blocking(i2c, MB_MPU_DEFAULT_I2C_ADDR, &val, 1, true);
-    i2c_read_blocking(i2c, MB_MPU_DEFAULT_I2C_ADDR, buffer, 6, false);  // False - finished with bus
+    i2c_write_blocking(i2c, rc_MPU_DEFAULT_I2C_ADDR, &val, 1, true);
+    i2c_read_blocking(i2c, rc_MPU_DEFAULT_I2C_ADDR, buffer, 6, false);  // False - finished with bus
 
     for (int i = 0; i < 3; i++) {
        mag[i] = (buffer[i * 2] << 8 | buffer[(i * 2) + 1]);
@@ -2898,8 +2907,8 @@ void mpu9250_read_raw(i2c_inst_t* i2c, int16_t accel[3], int16_t gyro[3], int16_
     // Now temperature from reg 0x41 for 2 bytes
     // The register is auto incrementing on each read
     val = TEMP_OUT_H;
-    i2c_write_blocking(i2c, MB_MPU_DEFAULT_I2C_ADDR, &val, 1, true);
-    i2c_read_blocking(i2c, MB_MPU_DEFAULT_I2C_ADDR, buffer, 2, false);  // False - finished with bus
+    i2c_write_blocking(i2c, rc_MPU_DEFAULT_I2C_ADDR, &val, 1, true);
+    i2c_read_blocking(i2c, rc_MPU_DEFAULT_I2C_ADDR, buffer, 2, false);  // False - finished with bus
 
     *temp = buffer[0] << 8 | buffer[1];
 }

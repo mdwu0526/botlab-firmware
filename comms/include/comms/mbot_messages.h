@@ -4,8 +4,8 @@
 #include <string.h>
 #include <pico/binary_info.h> 
 
-#ifndef MESSAGES_MB_H
-#define MESSAGES_MB_H
+#ifndef MBOT_MESSAGES_H
+#define MBOT_MESSAGES_H
 
 enum message_topics{
     MBOT_TIMESYNC = 201, ODOMETRY = 210, RESET_ODOMETRY = 211, MBOT_IMU = 220, MBOT_MOTOR_COMMAND = 230, OMNI_MOTOR_COMMAND = 230, MBOT_ENCODERS = 240, OMNI_ENCODERS = 241, RESET_ENCODERS = 242

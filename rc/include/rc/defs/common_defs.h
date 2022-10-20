@@ -7,6 +7,7 @@
 #define LEFT_MOTOR_CHANNEL      1
 #define RIGHT_MOTOR_CHANNEL     3
 
+#define WHEEL_RADIUS            0.0505
 #define GEAR_RATIO              78.0
 #define ENCODER_RES             20.0
 #define WHEEL_BASE              0.15

@@ -21,25 +21,20 @@ int main()
     char char1 = 0x00;
     char char2 = 0x00;
     sleep_ms(2000);
-    int rc = PICO_ERROR_NO_DATA;
+    int resp_char = PICO_ERROR_NO_DATA;
     while (1)
     {
         // get whats typed one one serial, and broadcast to the other
-        rc = stdio_usb_in_chars_itf(0, &char1, 1);
-        if(rc != PICO_ERROR_NO_DATA)
+        resp_char = stdio_usb_in_chars_itf(0, &char1, 1);
+        if(resp_char != PICO_ERROR_NO_DATA)
         {
             stdio_usb_out_chars_itf(1, &char1, 1);            
         }
-        rc = stdio_usb_in_chars_itf(1, &char1, 1);
-        if(rc != PICO_ERROR_NO_DATA)
+        resp_char = stdio_usb_in_chars_itf(1, &char1, 1);
+        if(resp_char != PICO_ERROR_NO_DATA)
         {
             stdio_usb_out_chars_itf(0, &char1, 1);            
         }
-
-        //gpio_put(PICO_DEFAULT_LED_PIN, true);
-        //sleep_ms(500);
-        //gpio_put(PICO_DEFAULT_LED_PIN, false);
-        //sleep_ms(500);
     }
 }
 

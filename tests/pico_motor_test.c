@@ -6,7 +6,7 @@
 
 #define INT_16_MAX 32768
 
-void drive_motor_up_down(int motor);
+void drive_motor_up_down(int);
 void blink();
 
 int main() {
@@ -21,7 +21,6 @@ int main() {
 
 
     rc_motor_init();
-    
     blink();
     printf("Testing motor A...\n");
     drive_motor_up_down(1);
@@ -43,6 +42,22 @@ int main() {
     rc_motor_cleanup();
     
     blink();
+
+   /*
+   // Test for max PWM
+    rc_motor_set(1, INT_16_MAX);
+    sleep_ms(1000);
+    for (int i = INT_16_MAX; i > 0; i -= INT_16_MAX / 64) {
+        rc_motor_set(1, i);
+        sleep_ms(1);
+    }
+    rc_motor_cleanup();
+    int i = 0;
+    while(true)
+    {
+        i += 1;
+    }
+    */
     return 0;
 }
 

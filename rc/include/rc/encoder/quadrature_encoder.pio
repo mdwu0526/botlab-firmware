@@ -111,7 +111,7 @@ increment_cont:
 // will set the clock to the maximum, which gives a max step rate of around
 // 8.9 Msteps/sec at 125MHz
 
-int32_t count[4] = {0,0,0,0};
+int32_t encoder_count[4] = {0,0,0,0};
 
 static inline void quadrature_encoder_program_init(PIO pio, uint sm, uint offset, uint pin, int max_step_rate)
 {
@@ -158,7 +158,7 @@ static inline int32_t quadrature_encoder_fetch_delta(PIO pio, uint sm)
 	while (pio_sm_is_rx_fifo_empty(pio, sm))
 		tight_loop_contents();
 	uint val = pio->rxf[sm];
-	count[sm] += val;
+	encoder_count[sm] += val;
 	return val;
 }
 
@@ -170,12 +170,12 @@ static inline int32_t quadrature_encoder_get_delta(PIO pio, uint sm)
 
 static inline int32_t quadrature_encoder_get_count(uint sm)
 {
-	return count[sm];
+	return encoder_count[sm];
 }
 
 static void quadrature_encoder_set_count(uint sm, int32_t new_count)
 {
-	count[sm] = new_count;
+	encoder_count[sm] = new_count;
 }
 
 %}

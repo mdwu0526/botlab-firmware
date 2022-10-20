@@ -1,9 +1,9 @@
 
-#TEST_DMP
-add_executable(test_dmp
-  test_dmp.c
+#pico_dmp_test
+add_executable(pico_dmp_test
+  pico_dmp_test.c
 )
-target_link_libraries(test_dmp
+target_link_libraries(pico_dmp_test
   pico_stdlib
   pico_multicore
   hardware_pwm
@@ -13,20 +13,56 @@ target_link_libraries(test_dmp
   rclib
   comms
 )
-pico_enable_stdio_usb(test_dmp 1)
-pico_enable_stdio_uart(test_dmp 0)
-pico_add_extra_outputs(test_dmp)
+pico_enable_stdio_usb(pico_dmp_test 1)
+pico_enable_stdio_uart(pico_dmp_test 0)
+pico_add_extra_outputs(pico_dmp_test)
+
+#pico_calibrate_accel
+add_executable(pico_calibrate_accel
+  pico_calibrate_accel.c
+)
+target_link_libraries(pico_calibrate_accel
+  pico_stdlib
+  pico_multicore
+  hardware_pwm
+  hardware_sync
+  hardware_i2c
+  hardware_flash
+  rclib
+  comms
+)
+pico_enable_stdio_usb(pico_calibrate_accel 1)
+pico_enable_stdio_uart(pico_calibrate_accel 0)
+pico_add_extra_outputs(pico_calibrate_accel)
+
+#pico_calibrate_gyro
+add_executable(pico_calibrate_gyro
+  pico_calibrate_gyro.c
+)
+target_link_libraries(pico_calibrate_gyro
+  pico_stdlib
+  pico_multicore
+  hardware_pwm
+  hardware_sync
+  hardware_i2c
+  hardware_flash
+  rclib
+  comms
+)
+pico_enable_stdio_usb(pico_calibrate_gyro 1)
+pico_enable_stdio_uart(pico_calibrate_gyro 0)
+pico_add_extra_outputs(pico_calibrate_gyro)
 
 #MATRIX-TESTS
-add_executable(matrix-tests
-matrix-tests.c
+add_executable(pico_matrix_test
+pico_matrix_test.c
 )
-target_link_libraries(matrix-tests
+target_link_libraries(pico_matrix_test
   pico_stdlib
   rclib
 )
-pico_enable_stdio_usb(matrix-tests 1)
-pico_add_extra_outputs(matrix-tests)
+pico_enable_stdio_usb(pico_matrix_test 1)
+pico_add_extra_outputs(pico_matrix_test)
 
 
 #FRAM-TEST
@@ -57,21 +93,6 @@ pico_enable_stdio_usb(pico_motor_test 1)
 pico_enable_stdio_uart(pico_motor_test 0)
 pico_add_extra_outputs(pico_motor_test)
 
-#DRIVE_FORWARD
-add_executable(pico_drive_forward
-  pico_drive_forward.c
-)
-target_link_libraries(pico_drive_forward
-  pico_stdlib
-  pico_multicore
-  hardware_pio
-  hardware_pwm
-  rclib
-)
-pico_enable_stdio_usb(pico_drive_forward 1)
-pico_enable_stdio_uart(pico_drive_forward 0)
-pico_add_extra_outputs(pico_drive_forward)
-
 #MOTOR-ANALYZE
 add_executable(pico_motor_analyze
   pico_motor_analyze.c
@@ -89,10 +110,10 @@ pico_enable_stdio_uart(pico_motor_analyze 0)
 pico_add_extra_outputs(pico_motor_analyze)
 
 #I control tests
-add_executable(pico_current_control
-  pico_current_control.c
+add_executable(pico_current_control_test
+  pico_current_control_test.c
 )
-target_link_libraries(pico_current_control
+target_link_libraries(pico_current_control_test
   pico_stdlib
   pico_multicore
   hardware_pio
@@ -100,9 +121,9 @@ target_link_libraries(pico_current_control
   hardware_adc
   rclib
 )
-pico_enable_stdio_usb(pico_current_control 1)
-pico_enable_stdio_uart(pico_current_control 0)
-pico_add_extra_outputs(pico_current_control)
+pico_enable_stdio_usb(pico_current_control_test 1)
+pico_enable_stdio_uart(pico_current_control_test 0)
+pico_add_extra_outputs(pico_current_control_test)
 
 
 #Encoder tests
@@ -119,33 +140,3 @@ target_link_libraries(pico_encoder_test
 pico_enable_stdio_usb(pico_encoder_test 1)
 pico_enable_stdio_uart(pico_encoder_test 0)
 pico_add_extra_outputs(pico_encoder_test)
-
-#Encoder output
-add_executable(pico_encoder_output
-  pico_encoder_output.c
-)
-target_link_libraries(pico_encoder_output
-  pico_stdlib
-  pico_multicore
-  hardware_pio
-  hardware_pwm
-  rclib
-)
-pico_enable_stdio_usb(pico_encoder_output 1)
-pico_enable_stdio_uart(pico_encoder_output 0)
-pico_add_extra_outputs(pico_encoder_output)
-
-#Drive robot
-add_executable(test_driving
-  test_driving.c
-)
-target_link_libraries(test_driving
-  pico_stdlib
-  pico_multicore
-  hardware_pio
-  hardware_pwm
-  rclib
-)
-pico_enable_stdio_usb(test_driving 1)
-pico_enable_stdio_uart(test_driving 0)
-pico_add_extra_outputs(test_driving)

@@ -9,10 +9,10 @@
  * ##Normal Mode
  *
  * The accelerometer, gyroscope, magnetometer, and thermometer can be
- * read directly at any time. To use this mode, call mb_mpu_initialize() with
+ * read directly at any time. To use this mode, call rc_mpu_initialize() with
  * your imu_config and imu_data structs as arguments as defined below. You can
- * then call mb_mpu_read_accel, mb_mpu_read_gyro, mb_mpu_read_mag, or
- * mb_mpu_read_temp at any time to get the latest sensor values.
+ * then call rc_mpu_read_accel, rc_mpu_read_gyro, rc_mpu_read_mag, or
+ * rc_mpu_read_temp at any time to get the latest sensor values.
  *
  * ##DMP Mode
  *
@@ -22,7 +22,7 @@
  * calculate a filtered orientation quaternion which is placed in the same
  * buffer. When new data is ready in the buffer, the IMU sends an interrupt to
  * the BeagleBone triggering the buffer read followed by the execution of a
- * function of your choosing set with the mb_mpu_set_dmp_callback() function.
+ * function of your choosing set with the rc_mpu_set_dmp_callback() function.
  *
  * @author     James Strawson
  * @date       1/19/2018
@@ -31,8 +31,8 @@
  * @{
  */
 
-#ifndef MB_MPU_MPU_H
-#define MB_MPU_MPU_H
+#ifndef RC_MPU_MPU_H
+#define RC_MPU_MPU_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -103,10 +103,10 @@ extern "C" {
 #define DMP_ENABLE_MAGNETOMETER 0
 #define DEBUG_OUTPUT 0
 
-#define MB_MPU_DEFAULT_I2C_ADDR	0x68 ///< default i2c address if AD0 is left low
-#define MB_MPU_ALT_I2C_ADDR	0x69 ///< alternate i2c address if AD0 pin pulled high
-#define MB_MPU_INTERRUPT_GPIO 22
-#define MB_MPU_I2C_BAUDRATE 400000 ///< baudrate of MPU i2c bus 400kHz
+#define rc_MPU_DEFAULT_I2C_ADDR	0x68 ///< default i2c address if AD0 is left low
+#define rc_MPU_ALT_I2C_ADDR	0x69 ///< alternate i2c address if AD0 pin pulled high
+#define rc_MPU_INTERRUPT_GPIO 22
+#define rc_MPU_I2C_BAUDRATE 400000 ///< baudrate of MPU i2c bus 400kHz
 
 // defines for index location within TaitBryan and quaternion vectors
 #define TB_PITCH_X	0 ///< Index of the dmp_TaitBryan[] array corresponding to the Pitch (X) axis.
@@ -143,12 +143,12 @@ extern "C" {
  * gyroscope. They have units of gravity (G) and degrees per second (DPS) The
  * defaults values are A_FSR_2G and G_FSR_2000DPS respectively.
  */
-typedef enum mb_mpu_accel_fsr_t{
+typedef enum rc_mpu_accel_fsr_t{
 	ACCEL_FSR_2G,
 	ACCEL_FSR_4G,
 	ACCEL_FSR_8G,
 	ACCEL_FSR_16G
-} mb_mpu_accel_fsr_t;
+} rc_mpu_accel_fsr_t;
 
 /**
  * @brief      gyroscope full scale range options
@@ -157,12 +157,12 @@ typedef enum mb_mpu_accel_fsr_t{
  * gyroscope. They have units of gravity (G) and degrees per second (DPS) The
  * defaults values are A_FSR_2G and G_FSR_2000DPS respectively.
  */
-typedef enum mb_mpu_gyro_fsr_t{
+typedef enum rc_mpu_gyro_fsr_t{
 	GYRO_FSR_250DPS,
 	GYRO_FSR_500DPS,
 	GYRO_FSR_1000DPS,
 	GYRO_FSR_2000DPS
-} mb_mpu_gyro_fsr_t;
+} rc_mpu_gyro_fsr_t;
 
 /**
  * @brief      accelerometer digital low-pass filter options
@@ -173,7 +173,7 @@ typedef enum mb_mpu_gyro_fsr_t{
  * GYRO_DLPF_184. Lower cut-off frequencies incur phase-loss in measurements.
  * Number is cutoff frequency in hz.
  */
-typedef enum mb_mpu_accel_dlpf_t{
+typedef enum rc_mpu_accel_dlpf_t{
 	ACCEL_DLPF_OFF,
 	ACCEL_DLPF_460,
 	ACCEL_DLPF_184,
@@ -182,7 +182,7 @@ typedef enum mb_mpu_accel_dlpf_t{
 	ACCEL_DLPF_20,
 	ACCEL_DLPF_10,
 	ACCEL_DLPF_5
-} mb_mpu_accel_dlpf_t;
+} rc_mpu_accel_dlpf_t;
 
 /**
  * @brief      gyroscope digital low-pass filter options
@@ -193,7 +193,7 @@ typedef enum mb_mpu_accel_dlpf_t{
  * GYRO_DLPF_184. Lower cut-off frequencies incur phase-loss in measurements.
  * Number is cutoff frequency in hz.
  */
-typedef enum mb_mpu_gyro_dlpf_t{
+typedef enum rc_mpu_gyro_dlpf_t{
 	GYRO_DLPF_OFF,
 	GYRO_DLPF_250,
 	GYRO_DLPF_184,
@@ -202,7 +202,7 @@ typedef enum mb_mpu_gyro_dlpf_t{
 	GYRO_DLPF_20,
 	GYRO_DLPF_10,
 	GYRO_DLPF_5
-} mb_mpu_gyro_dlpf_t;
+} rc_mpu_gyro_dlpf_t;
 
 /**
  * @brief      Orientation of the sensor.
@@ -210,7 +210,7 @@ typedef enum mb_mpu_gyro_dlpf_t{
  * This is only applicable when operating in DMP mode. This is the orientation
  * that the DMP consideres neutral, aka where roll/pitch/yaw are zero.
  */
-typedef enum mb_mpu_orientation_t{
+typedef enum rc_mpu_orientation_t{
 	ORIENTATION_Z_UP	= 136,
 	ORIENTATION_Z_DOWN	= 396,
 	ORIENTATION_X_UP	= 14,
@@ -219,27 +219,27 @@ typedef enum mb_mpu_orientation_t{
 	ORIENTATION_Y_DOWN	= 336,
 	ORIENTATION_X_FORWARD	= 133,
 	ORIENTATION_X_BACK	= 161
-} mb_mpu_orientation_t;
+} rc_mpu_orientation_t;
 
 /**
  * @brief      Offset in memory of config data
  *
  *  Add this to the 
  */
-typedef enum mb_mpu_cfg_offset_t{
+typedef enum rc_mpu_cfg_offset_t{
 	MPU_GYRO_CONFIG_ADDR = 0,
 	MPU_ACCEL_CONFIG_ADDR = 6,
 	MPU_MAG_CONFIG_ADDR = 54
-} mb_mpu_cfg_offset_t;
+} rc_mpu_cfg_offset_t;
 
 /**
  * @brief      configuration of the mpu sensor
  *
- * Configuration struct passed to mb_mpu_initialize and mb_mpu_initialize_dmp.
- * It is best to get the default config with mb_mpu_default_config() function
+ * Configuration struct passed to rc_mpu_initialize and rc_mpu_initialize_dmp.
+ * It is best to get the default config with rc_mpu_default_config() function
  * first and modify from there.
  */
-typedef struct mb_mpu_config_t{
+typedef struct rc_mpu_config_t{
 	/** @name physical connection configuration */
 	///@{
 	int gpio_interrupt_pin;		///< gpio pin, default 21 on Robotics Cape and BB Blue
@@ -250,10 +250,10 @@ typedef struct mb_mpu_config_t{
 
 	/** @name accelerometer, gyroscope, and magnetometer configuration */
 	///@{
-	mb_mpu_accel_fsr_t accel_fsr;	///< accelerometer full scale range, default ACCEL_FSR_8G
-	mb_mpu_gyro_fsr_t gyro_fsr;	///< gyroscope full scale range, default GYRO_FSR_2000DPS
-	mb_mpu_accel_dlpf_t accel_dlpf;	///< internal low pass filter cutoff, default ACCEL_DLPF_184
-	mb_mpu_gyro_dlpf_t gyro_dlpf;	///< internal low pass filter cutoff, default GYRO_DLPF_184
+	rc_mpu_accel_fsr_t accel_fsr;	///< accelerometer full scale range, default ACCEL_FSR_8G
+	rc_mpu_gyro_fsr_t gyro_fsr;	///< gyroscope full scale range, default GYRO_FSR_2000DPS
+	rc_mpu_accel_dlpf_t accel_dlpf;	///< internal low pass filter cutoff, default ACCEL_DLPF_184
+	rc_mpu_gyro_dlpf_t gyro_dlpf;	///< internal low pass filter cutoff, default GYRO_DLPF_184
 	int enable_magnetometer;	///< magnetometer use is optional, set to 1 to enable, default 0 (off)
 	///@}
 
@@ -262,14 +262,14 @@ typedef struct mb_mpu_config_t{
 	int dmp_sample_rate;		///< sample rate in hertz, 200,100,50,40,25,20,10,8,5,4
 	int dmp_fetch_accel_gyro;	///< set to 1 to optionally raw accel/gyro when reading DMP quaternion, default: 0 (off)
 	int dmp_auto_calibrate_gyro;	///< set to 1 to let DMP auto calibrate the gyro while in use, default: 0 (off)
-	mb_mpu_orientation_t orient;	///< DMP orientation matrix, see mb_mpu_orientation_t
+	rc_mpu_orientation_t orient;	///< DMP orientation matrix, see rc_mpu_orientation_t
 	double compass_time_constant;	///< time constant (seconds) for filtering compass with gyroscope yaw value, default 25
 	int read_mag_after_callback;	///< reads magnetometer after DMP callback function to improve latency, default 1 (true)
 	int mag_sample_rate_div;	///< magnetometer_sample_rate = dmp_sample_rate/mag_sample_rate_div, default: 4
 	int tap_threshold;		///< threshold impulse for triggering a tap in units of mg/ms
 	///@}
 
-} mb_mpu_config_t;
+} rc_mpu_config_t;
 
 
 /**
@@ -280,7 +280,7 @@ typedef struct mb_mpu_config_t{
  * functions. new data will then be written back into the user's instance of the
  * data struct.
  */
-typedef struct mb_mpu_data_t{
+typedef struct rc_mpu_data_t{
 	/** @name base sensor readings in real units */
 	///@{
 	double accel[3];	///< accelerometer (XYZ) in units of m/s^2
@@ -313,7 +313,7 @@ typedef struct mb_mpu_data_t{
 	double compass_heading;		///< fused heading filtered with gyro and accel data, same as Tait-Bryan yaw
 	double compass_heading_raw;	///< unfiltered heading from magnetometer
 	///@}
-} mb_mpu_data_t;
+} rc_mpu_data_t;
 
 /**
  * Function headers
@@ -321,7 +321,7 @@ typedef struct mb_mpu_data_t{
  */
 
 
-void mb_dmp_callback(uint gpio, uint32_t events);
+void rc_dmp_callback(uint gpio, uint32_t events);
 
 void mpu9250_read_raw(i2c_inst_t* i2c, int16_t accel[3], int16_t gyro[3], int16_t mag[3], int16_t *temp);
 
@@ -329,13 +329,13 @@ void mpu9250_read_raw(i2c_inst_t* i2c, int16_t accel[3], int16_t gyro[3], int16_
 ///@{
 
 /**
- * @brief      Returns an mb_mpu_config_t struct with default settings.
+ * @brief      Returns an rc_mpu_config_t struct with default settings.
  *
  * Use this as a starting point and modify as you wish.
  *
- * @return     Returns an mb_mpu_config_t struct with default settings.
+ * @return     Returns an rc_mpu_config_t struct with default settings.
  */
-mb_mpu_config_t mb_mpu_default_config(void);
+rc_mpu_config_t rc_mpu_default_config(void);
 
 /**
  * @brief      Resets a config struct to defaults.
@@ -344,18 +344,18 @@ mb_mpu_config_t mb_mpu_default_config(void);
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_mpu_set_config_to_default(mb_mpu_config_t* conf);
+int rc_mpu_set_config_to_default(rc_mpu_config_t* conf);
 
 /**
  * @brief      Powers off the MPU
  *
- * Only call this after powering on the MPU with mb_mpu_initialize or
- * mb_mpu_initialize_dmp. This should geenrally be called at the end of your
+ * Only call this after powering on the MPU with rc_mpu_initialize or
+ * rc_mpu_initialize_dmp. This should geenrally be called at the end of your
  * main function to make sure the MPU is put to sleep.
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_mpu_power_off(void);
+int rc_mpu_power_off(void);
 
 ///@} end common functions
 
@@ -366,28 +366,28 @@ int mb_mpu_power_off(void);
 /**
  * @brief      Sets up the MPU in normal one-shot sampling mode.
  *
- * First create an instance of the mb_mpu_data_t struct and pass its pointer to
- * mb_mpu_initialize which will then write to. Also pass an mb_mpu_config_t
+ * First create an instance of the rc_mpu_data_t struct and pass its pointer to
+ * rc_mpu_initialize which will then write to. Also pass an rc_mpu_config_t
  * struct with your configruation settings.
  *
  * This function will populate the  accel_to_ms2 and gyro_to_deg fields of the
- * mb_mpu_data_t struct appropriately based on the user-configured full scale
+ * rc_mpu_data_t struct appropriately based on the user-configured full scale
  * ranges.
  *
  * After this, you may read sensor data at any time with the functions
- * mb_mpu_read_accel(), mb_mpu_read_gyro(), and mb_mpu_read_temp(). The magentometer
- * can also be read with mb_mpu_read_mag() if using an MPU9150 or MPU9250 and the
- * enable_magnetometer field in the mb_mpu_config_t struct has been set to 1.
+ * rc_mpu_read_accel(), rc_mpu_read_gyro(), and rc_mpu_read_temp(). The magentometer
+ * can also be read with rc_mpu_read_mag() if using an MPU9150 or MPU9250 and the
+ * enable_magnetometer field in the rc_mpu_config_t struct has been set to 1.
  *
  * Be sure to power off the MPU at the end of your program with
- * mb_mpu_power_off().
+ * rc_mpu_power_off().
  *
  * @param      data  pointer to user's data struct
  * @param[in]  conf  user congiguration data
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_mpu_initialize(mb_mpu_data_t* data, mb_mpu_config_t conf);
+int rc_mpu_initialize(rc_mpu_data_t* data, rc_mpu_config_t conf);
 
 
 /**
@@ -398,7 +398,7 @@ int mb_mpu_initialize(mb_mpu_data_t* data, mb_mpu_config_t conf);
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_mpu_read_accel(mb_mpu_data_t* data);
+int rc_mpu_read_accel(rc_mpu_data_t* data);
 
 
 /**
@@ -409,7 +409,7 @@ int mb_mpu_read_accel(mb_mpu_data_t* data);
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_mpu_read_gyro(mb_mpu_data_t* data);
+int rc_mpu_read_gyro(rc_mpu_data_t* data);
 
 
 /**
@@ -422,7 +422,7 @@ int mb_mpu_read_gyro(mb_mpu_data_t* data);
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_mpu_read_temp(mb_mpu_data_t* data);
+int rc_mpu_read_temp(rc_mpu_data_t* data);
 
 
 /**
@@ -430,15 +430,15 @@ int mb_mpu_read_temp(mb_mpu_data_t* data);
  *
  * Note this requires use of an MPU9150 or MPU9250, the MPU6050 and MPU6500 do
  * not have magnetometers. Additionally, the enable_magnetometer flag must has
- * been set in the user's mb_mpu_config_t when it was passed to
- * mb_mpu_initialize()
+ * been set in the user's rc_mpu_config_t when it was passed to
+ * rc_mpu_initialize()
  *
  * @param      data  Pointer to user's data struct where new data will be
  * written
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_mpu_read_mag(mb_mpu_data_t* data);
+int rc_mpu_read_mag(rc_mpu_data_t* data);
 ///@} end normal one-shot sampling functions
 
 
@@ -449,7 +449,7 @@ int mb_mpu_read_mag(mb_mpu_data_t* data);
  * @brief      Initializes the MPU in DMP mode, see rc_test_dmp example
  *
  * After calling this the user does not need to call the normal read functions
- * mb_mpu_read_accel(), mb_mpu_read_gyro(), or mb_mpu_read mag(). Instead the
+ * rc_mpu_read_accel(), rc_mpu_read_gyro(), or rc_mpu_read mag(). Instead the
  * data will automatically be read into the user's data struct at the
  * dmp_sample_rate set in the config struct.
  *
@@ -459,7 +459,7 @@ int mb_mpu_read_mag(mb_mpu_data_t* data);
  *
  * @return     0 on success or -1 on failure.
  */
-int mb_mpu_initialize_dmp(mb_mpu_data_t* data, mb_mpu_config_t conf);
+int rc_mpu_initialize_dmp(rc_mpu_data_t* data, rc_mpu_config_t conf);
 
 
 /**
@@ -470,16 +470,16 @@ int mb_mpu_initialize_dmp(mb_mpu_data_t* data, mb_mpu_config_t conf);
  *
  * @return     0 on success or -1 on failure.
  */
-//int mb_mpu_set_dmp_callback(void (*func)(void));
+//int rc_mpu_set_dmp_callback(void (*func)(void));
 
 
 // /**
 //  * @brief      blocking function that returns once new DMP data is available
 //  *
 //  * @return     Returns 0 once new data is available, 1 if the MPU is shutting
-//  * down due to mb_mpu_power_off, or -1 on error.
+//  * down due to rc_mpu_power_off, or -1 on error.
 //  */
-// int mb_mpu_block_until_dmp_data(void);
+// int rc_mpu_block_until_dmp_data(void);
 
 
 // /**
@@ -488,7 +488,7 @@ int mb_mpu_initialize_dmp(mb_mpu_data_t* data, mb_mpu_config_t conf);
 //  * @return     nanoseconds since last interrupt, or -1 if no interrupt received
 //  * yet.
 //  */
-// int64_t mb_mpu_nanos_since_last_dmp_interrupt(void);
+// int64_t rc_mpu_nanos_since_last_dmp_interrupt(void);
 
 
 /**
@@ -498,16 +498,16 @@ int mb_mpu_initialize_dmp(mb_mpu_data_t* data, mb_mpu_config_t conf);
  *
  * @return     0 on success or -1 on failure.
  */
-//int mb_mpu_set_tap_callback(void (*func)(int direction, int counter));
+//int rc_mpu_set_tap_callback(void (*func)(int direction, int counter));
 
 
 // /**
 //  * @brief      blocking function that returns when a tap is detected
 //  *
 //  * @return     Returns 0 once a tap is detected, 1 if the MPU is shutting down
-//  * due to mb_mpu_power_off(), or -1 on error.
+//  * due to rc_mpu_power_off(), or -1 on error.
 //  */
-// int mb_mpu_block_until_tap(void);
+// int rc_mpu_block_until_tap(void);
 
 
 // /**
@@ -516,7 +516,7 @@ int mb_mpu_initialize_dmp(mb_mpu_data_t* data, mb_mpu_config_t conf);
 //  * @return     nanoseconds since last tap, or -1 if no tap has been detected
 //  * yet.
 //  */
-// int64_t mb_mpu_nanos_since_last_tap(void);
+// int64_t rc_mpu_nanos_since_last_tap(void);
 ///@} end interrupt-driven DMP mode functions
 
 
@@ -535,7 +535,7 @@ int mb_mpu_initialize_dmp(mb_mpu_data_t* data, mb_mpu_config_t conf);
  *
  * @return     0 on success, -1 on failure
  */
-int mb_mpu_calibrate_gyro_routine(mb_mpu_config_t conf);
+int rc_mpu_calibrate_gyro_routine(rc_mpu_config_t conf);
 
 
 /**
@@ -549,7 +549,7 @@ int mb_mpu_calibrate_gyro_routine(mb_mpu_config_t conf);
  *
  * @return     0 on success, -1 on failure
  */
-int mb_mpu_calibrate_mag_routine(mb_mpu_config_t conf);
+int rc_mpu_calibrate_mag_routine(rc_mpu_config_t conf);
 
 
 /**
@@ -563,9 +563,9 @@ int mb_mpu_calibrate_mag_routine(mb_mpu_config_t conf);
  *
  * @return     0 on success, -1 on failure
  */
-int mb_mpu_calibrate_accel_routine(mb_mpu_config_t conf);
+int rc_mpu_calibrate_accel_routine(rc_mpu_config_t conf);
 
-int mb_mpu_reset_accel_cal(i2c_inst_t* i2c);
+int rc_mpu_reset_accel_cal(i2c_inst_t* i2c);
 
 /**
  * @brief      Checks if a gyro calibration file is saved to disk
@@ -576,7 +576,7 @@ int mb_mpu_reset_accel_cal(i2c_inst_t* i2c);
  *
  * @return     1 if calibrated, 0 if not
  */
-int mb_mpu_is_gyro_calibrated(void);
+int rc_mpu_is_gyro_calibrated(void);
 
 
 /**
@@ -588,7 +588,7 @@ int mb_mpu_is_gyro_calibrated(void);
  *
  * @return     1 if calibrated, 0 if not
  */
-int mb_mpu_is_mag_calibrated(void);
+int rc_mpu_is_mag_calibrated(void);
 
 
 /**
@@ -600,10 +600,10 @@ int mb_mpu_is_mag_calibrated(void);
  *
  * @return     1 if calibrated, 0 if not
  */
-int mb_mpu_is_accel_calibrated(void);
+int rc_mpu_is_accel_calibrated(void);
 
 
-int mb_print_gyro_calibration(i2c_inst_t* i2c);
+int rc_print_gyro_calibration(i2c_inst_t* i2c);
 
 ///@} end calibration functions
 
@@ -612,4 +612,4 @@ int mb_print_gyro_calibration(i2c_inst_t* i2c);
 }
 #endif
 
-#endif // mb_MPU_MPU_H
+#endif // rc_MPU_MPU_H

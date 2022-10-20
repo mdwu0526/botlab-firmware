@@ -3,9 +3,11 @@
 #include <pico/stdlib.h>
 #include <hardware/pwm.h>
 
+#define MAX_PWM 32630
+
 rc_motor_state MOTOR_STATE;
 uint32_t FREQ = DEFAULT_FREQ;
-uint32_t WRAP;
+uint16_t WRAP;
 
 //  Initializes all 3 motors and leaves them in a free-spin (0 throttle) state.
 //  This starts the motor drivers at the default value of FREQ. To use another frequency initialize with rc_motor_init_freq instead.
@@ -95,40 +97,41 @@ int rc_motor_cleanup() {
 //  duty = -2^15 (signed short lower limit) for full reverse, 2^15 (signed short upper limit) for full forward.
 //  Returns 0 on success, -1 on failure
 int rc_motor_set(uint ch, int32_t duty) {
-    unsigned int slice, channel, direction;
-    
-    if (duty < -32768) duty = -32768;
-    else if (duty > 32767) duty = 32767;
+    if (duty < -MAX_PWM) duty = -MAX_PWM;
+    else if (duty > MAX_PWM) duty = MAX_PWM;
+
+    bool direction = duty >= 0;
+    uint16_t level = WRAP * (uint16_t) ((direction)? (duty) : (-1 * duty)) / 32768;
+    // printf("duty: %d \r\n", duty);
+    // printf("WRAP: %d \r\n", WRAP);
+    // printf("direction: %d \r\n", direction);
+    // printf("level: %d \r\n", level);
 
     switch (ch) {
         case 0:
-            gpio_put(M0_DIR_PIN, duty >= 0);
-            gpio_put(M1_DIR_PIN, duty >= 0);
-            gpio_put(M2_DIR_PIN, duty >= 0);
-            duty *= (duty < 0) ? -1 : 1;
-            
-            pwm_set_chan_level(M0_SLICE, M0_CHAN, (unsigned int) WRAP * duty / 32768);
-            pwm_set_chan_level(M1_SLICE, M1_CHAN, (unsigned int) WRAP * duty / 32768);
-            pwm_set_chan_level(M2_SLICE, M2_CHAN, (unsigned int) WRAP * duty / 32768);
-            return 0;
+            gpio_put(M0_DIR_PIN, direction);
+            gpio_put(M1_DIR_PIN, direction);
+            gpio_put(M2_DIR_PIN, direction);
+            pwm_set_chan_level(M0_SLICE, M0_CHAN, level);
+            pwm_set_chan_level(M1_SLICE, M1_CHAN, level);
+            pwm_set_chan_level(M2_SLICE, M2_CHAN, level);
+            break;
         case 1:
-            slice = M0_SLICE; channel = M0_CHAN; direction = M0_DIR_PIN;
+            gpio_put(M0_DIR_PIN, direction);
+            pwm_set_chan_level(M0_SLICE, M0_CHAN, level);
             break;
         case 2:
-            slice = M1_SLICE; channel = M1_CHAN; direction = M1_DIR_PIN;
+            gpio_put(M1_DIR_PIN, direction);
+            pwm_set_chan_level(M1_SLICE, M1_CHAN, level);
             break;
         case 3:
-            slice = M2_SLICE; channel = M2_CHAN; direction = M2_DIR_PIN;
+            gpio_put(M2_DIR_PIN, direction);
+            pwm_set_chan_level(M2_SLICE, M2_CHAN, level);
             break;
         default:
             fprintf(stderr, "Invalid channel!\n");
             return -1;
     }
-    
-    gpio_put(direction, duty >= 0);
-    duty *= (duty < 0) ? -1 : 1;
-    pwm_set_chan_level(slice, channel, WRAP * duty / 32768);
-    
     return 0;
 }
 

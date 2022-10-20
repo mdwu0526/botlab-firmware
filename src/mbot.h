@@ -33,9 +33,9 @@
 
 // TODO: Enter the polarity values for your motors and encoders
 #define LEFT_ENC_POL 1
-#define RIGHT_ENC_POL 1
-#define LEFT_MOTOR_POL 1
-#define RIGHT_MOTOR_POL 1
+#define RIGHT_ENC_POL -1
+#define LEFT_MOTOR_POL -1
+#define RIGHT_MOTOR_POL -1
 
 // TODO: Populate with calibration data (recommended to generate these for reverse direction as well)
 #define SLOPE_L 1.0

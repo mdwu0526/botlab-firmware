@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <pico/stdlib.h>
-#include <hardware/pwm.h>
-
+#include <hardware/pwm.h>x
 #include <rc/encoder/encoder.h>
 #include "quadrature_encoder.pio.h"
 
@@ -57,14 +56,11 @@ int rc_encoder_cleanup() {
 int rc_encoder_read_delta(uint ch) {
     switch (ch) {
         case 1:
-            quadrature_encoder_request_delta(pio, sm0);
-            return quadrature_encoder_fetch_delta(pio, sm0);
+            return quadrature_encoder_get_delta(pio, sm0);
         case 2:
-            quadrature_encoder_request_delta(pio, sm1);
-            return quadrature_encoder_fetch_delta(pio, sm1);
+            return quadrature_encoder_get_delta(pio, sm1);
         case 3:
-            quadrature_encoder_request_delta(pio, sm2);
-            return quadrature_encoder_fetch_delta(pio, sm2);
+            return quadrature_encoder_get_delta(pio, sm2);
         default:
             fprintf(stderr, "Invalid channel!\n");
             return -1;

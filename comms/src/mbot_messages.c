@@ -97,3 +97,17 @@ int omni_motor_command_t_serialize(omni_motor_command_t* src, uint8_t* dest)
     memcpy(dest, src, sizeof(omni_motor_command_t));
     return 1;
 }
+
+/*
+mbot_pid_gains_t commands serialize/deserialize
+*/
+int mbot_pid_gains_t_deserialize(uint8_t* src, mbot_pid_gains_t* dest)
+{
+    memcpy(dest, src, sizeof(mbot_pid_gains_t));
+    return 1;
+}
+int mbot_pid_gains_t_serialize(mbot_pid_gains_t* src, uint8_t* dest)
+{
+    memcpy(dest, src, sizeof(mbot_pid_gains_t));
+    return 1;
+}

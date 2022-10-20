@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <pico/stdlib.h>
-#include <hardware/pwm.h>x
+#include <hardware/pwm.h>
 #include <rc/encoder/encoder.h>
 #include "quadrature_encoder.pio.h"
 

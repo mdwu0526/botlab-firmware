@@ -14,7 +14,7 @@
 #include <comms/protocol.h>
 #include <comms/listener.h>
 #include <comms/topic_data.h>
-#include <comms/messages_mb.h>
+#include <comms/mbot_messages.h>
 
 #include <math.h>
 #include <inttypes.h>
@@ -24,11 +24,8 @@
 #define MAIN_LOOP_HZ 50.0 // 50 hz loop
 #define MAIN_LOOP_PERIOD (1.0f / MAIN_LOOP_HZ)
 
-#define LEFT_MOTOR_CHANNEL 1
-#define RIGHT_MOTOR_CHANNEL 3
-
 // data to hold current mpu state
-static mb_mpu_data_t mpu_data;
+static rc_mpu_data_t mpu_data;
 
 uint64_t timestamp_offset = 0;
 uint64_t current_pico_time = 0;
@@ -63,7 +60,7 @@ int write_pid_coefficients(i2c_inst_t *i2c)
 {
     uint8_t pid_bytes[PID_VALUES_LEN];
     memcpy(pid_bytes, &mbot_pid_gains, PID_VALUES_LEN);
-    return mb_write_fram(i2c, PID_VALUES_ADDR, PID_VALUES_LEN, &pid_bytes[0]);
+    return rc_write_fram(i2c, PID_VALUES_ADDR, PID_VALUES_LEN, &pid_bytes[0]);
 }
 
 void pid_values_cb(mbot_pid_gains_t *received_pid_gains)
@@ -96,7 +93,7 @@ void read_pid_coefficients(i2c_inst_t *i2c)
 {
     uint8_t pid_bytes[PID_VALUES_LEN];
 
-    if (mb_read_fram(i2c, PID_VALUES_ADDR, PID_VALUES_LEN, pid_bytes) > 0)
+    if (rc_read_fram(i2c, PID_VALUES_ADDR, PID_VALUES_LEN, pid_bytes) > 0)
     {
         printf("reading fram success.\n");
         memcpy(&mbot_pid_gains, pid_bytes, PID_VALUES_LEN);
@@ -316,20 +313,20 @@ int main()
     gpio_set_dir(LED_PIN, GPIO_OUT);
 
     printf("initializing DMP...\n");
-    mb_mpu_config_t mpu_config = mb_mpu_default_config();
+    rc_mpu_config_t mpu_config = rc_mpu_default_config();
     mpu_config.i2c_bus = i2c;
     mpu_config.dmp_fetch_accel_gyro = 1;
     mpu_config.enable_magnetometer = 1;
     mpu_config.read_mag_after_callback = 0;
     mpu_config.orient = ORIENTATION_Z_UP;
     mpu_config.dmp_sample_rate = 200;
-    // mb_mpu_reset_accel_cal(mpu_config.i2c_bus);
-    mb_mpu_calibrate_gyro_routine(mpu_config);
+    // rc_mpu_reset_accel_cal(mpu_config.i2c_bus);
+    rc_mpu_calibrate_gyro_routine(mpu_config);
     // sleep_ms(2000);
-    // mb_mpu_calibrate_accel_routine(mpu_config);
+    // rc_mpu_calibrate_accel_routine(mpu_config);
     sleep_ms(500);
-    mb_mpu_initialize_dmp(&mpu_data, mpu_config);
-    gpio_set_irq_enabled_with_callback(MB_MPU_INTERRUPT_GPIO, GPIO_IRQ_EDGE_FALL, true, &mb_dmp_callback);
+    rc_mpu_initialize_dmp(&mpu_data, mpu_config);
+    gpio_set_irq_enabled_with_callback(rc_MPU_INTERRUPT_GPIO, GPIO_IRQ_EDGE_FALL, true, &rc_dmp_callback);
     printf("MPU Initialized!\n");
 
     // create topics and register the serialize/deserialize functions

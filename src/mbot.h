@@ -17,16 +17,12 @@
 #include <comms/protocol.h>
 #include <comms/listener.h>
 #include <comms/topic_data.h>
-#include <comms/messages_mb.h>
+#include <comms/mbot_messages.h>
 
 #include <math.h>
 #include <inttypes.h>
 
 // Hardware info
-#define WHEEL_RADIUS 0.042
-#define GEAR_RATIO 78.0
-#define ENCODER_RES 20.0
-#define WHEEL_BASE 0.15 // wheel separation distance in meters
 #define MAX_FWD_VEL 0.8 // max forward speed (m/s)
 #define MESSAGE_CONFIRMATION_CHANNEL "MSG_CONFIRM"
 #define MAX_TURN_VEL 2.5 // max turning speed (rad/s)
@@ -47,7 +43,7 @@
 #define OPEN_LOOP 1
 
 // data to hold current mpu state (not used)
-static mb_mpu_data_t mpu_data;
+static rc_mpu_data_t mpu_data;
 static i2c_inst_t *i2c;
 
 uint64_t timestep_us = 0;

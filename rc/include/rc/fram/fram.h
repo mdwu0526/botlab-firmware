@@ -5,7 +5,8 @@
  *
  * @return     0 on success or -1 on failure.
  */
-//int rc_();
+#ifndef RC_FRAM_H
+#define RC_FRAM_H
 
 #include <stdio.h>
 #include <stdint.h>
@@ -80,3 +81,5 @@ int rc_write_word_fram(i2c_inst_t* i2c, uint16_t addr, uint16_t data);
  * @return     0 on success or -1 on failure.
  */
 int rc_erase_fram(i2c_inst_t* i2c);
+
+#endif

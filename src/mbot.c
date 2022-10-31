@@ -272,17 +272,16 @@ bool timer_cb(repeating_timer_t *rt)
 
 int main()
 {
-    bi_decl(bi_program_description("The main binary for the MBot Pico Board."));
-    bi_decl(bi_1pin_with_name(LED_PIN, "On-board LED"));
-    set_sys_clock_khz(250000, true);
-
-    stdio_init_all();
+    bi_decl(bi_program_description("Firmware for the MBot Robot Control Board"));
+    
+    set_sys_clock_khz(250000, true); // set master clock to 250MHz (if problematic try 125Mhz)
+    stdio_init_all(); // enable USB serial terminal
     sleep_ms(1500); // quick sleep so we can catch the bootup process in terminal
     printf("\nMBot Booting Up!\n");
 
-    printf("initing motors...\n");
+    printf("initializinging motors...\n");
     rc_motor_init();
-    printf("initing encoders...\n");
+    printf("initializinging encoders...\n");
     rc_encoder_init();
 
     // Pins
@@ -308,6 +307,7 @@ int main()
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
 
+    // Initialize the IMU using the Digital Motion Processor
     printf("initializing DMP...\n");
     rc_mpu_config_t mpu_config = rc_mpu_default_config();
     mpu_config.i2c_bus = i2c;
@@ -316,10 +316,9 @@ int main()
     mpu_config.read_mag_after_callback = 0;
     mpu_config.orient = ORIENTATION_Z_UP;
     mpu_config.dmp_sample_rate = 200;
-    // rc_mpu_reset_accel_cal(mpu_config.i2c_bus);
+    
+    // Calibrate the gyro to eliminate bias, Mbot must be still for this
     rc_mpu_calibrate_gyro_routine(mpu_config);
-    // sleep_ms(2000);
-    // rc_mpu_calibrate_accel_routine(mpu_config);
     sleep_ms(500);
     rc_mpu_initialize_dmp(&mpu_data, mpu_config);
     gpio_set_irq_enabled_with_callback(rc_MPU_INTERRUPT_GPIO, GPIO_IRQ_EDGE_FALL, true, &rc_dmp_callback);
@@ -337,7 +336,6 @@ int main()
 
     // wait for other core to get rolling
     sleep_ms(500);
-
     int running = 1;
 
     // run the main loop as a timed interrupt
@@ -346,6 +344,7 @@ int main()
     add_repeating_timer_ms(MAIN_LOOP_PERIOD * 1000, timer_cb, NULL, &loop_timer); // 1000x to convert to ms
 
     printf("Done Booting Up!\n\n");
+
     /*************************************************************
      * TODO:
      *  - wheel speed PID

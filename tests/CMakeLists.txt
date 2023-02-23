@@ -140,3 +140,20 @@ target_link_libraries(pico_encoder_test
 pico_enable_stdio_usb(pico_encoder_test 1)
 pico_enable_stdio_uart(pico_encoder_test 0)
 pico_add_extra_outputs(pico_encoder_test)
+
+# Teleop
+add_executable(pico_teleop
+  pico_teleop.c
+)
+target_link_libraries(pico_teleop
+  pico_stdlib
+  pico_multicore
+  hardware_pio
+  hardware_pwm
+  hardware_adc
+  rclib
+  comms
+)
+pico_enable_stdio_usb(pico_teleop 1)
+pico_enable_stdio_uart(pico_teleop 0)
+pico_add_extra_outputs(pico_teleop)

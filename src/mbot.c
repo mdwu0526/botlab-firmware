@@ -179,8 +179,18 @@ bool timer_cb(repeating_timer_t *rt)
          *      - Use the equations provided in the document to compute the odometry components
          *      - Remember to clamp the orientation between [0, 2pi]!
          *************************************************************/
-        float delta_d, delta_theta; // displacement in meters and rotation in radians
-
+        float delta_d, delta_theta, delta_s_l, delta_s_r; // displacement in meters and rotation in radians
+        delta_s_r = enc_delta_r*enc2meters;
+        delta_s_l = enc_delta_l*enc2meters;
+        delta_theta = (delta_s_r - delta_s_l)/WHEEL_BASE;
+        delta_d = (delta_s_r + delta_s_l)/2;
+        float delta_x = delta_d*cos(current_odom.theta+delta_theta/2);
+        float delta_y = delta_d * sin(current_odom.theta + delta_theta/2);
+        current_odom.theta += delta_theta;
+        current_odom.x += delta_x;
+        current_odom.y += delta_y;
+        current_odom.utime = cur_pico_time;
+        
         /*************************************************************
          * End of TODO
          *************************************************************/

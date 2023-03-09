@@ -20,6 +20,10 @@
 #include <inttypes.h>
 #include "mbot.h"
 
+
+// MOTOR 1 = LEFT MOTOR
+// MOTOR 3 = RIGHT MOTOR
+
 #define LED_PIN 25
 #define MAIN_LOOP_HZ 50.0 // 50 hz loop
 #define MAIN_LOOP_PERIOD (1.0f / MAIN_LOOP_HZ)

@@ -24,6 +24,9 @@
 // MOTOR 1 = LEFT MOTOR
 // MOTOR 3 = RIGHT MOTOR
 
+// Set this to determine what calibration constants to use (Open-Loop)
+#define MBOT_ID MWU // SPARHAM, MWU, WHU
+
 #define LED_PIN 25
 #define MAIN_LOOP_HZ 50.0 // 50 hz loop
 #define MAIN_LOOP_PERIOD (1.0f / MAIN_LOOP_HZ)
@@ -35,6 +38,51 @@ uint64_t timestamp_offset = 0;
 uint64_t current_pico_time = 0;
 
 float enc2meters = ((2.0 * PI * WHEEL_RADIUS) / (GEAR_RATIO * ENCODER_RES));
+
+// Set calibration constants for open loop controller (OPEN-LOOP)
+// m1 = left motor, m3 = right motor
+// float m1_slope, m1_int, m3_slope, m3_int;
+#if MBOT_ID == SPARHAM
+    float m1_slope = -0.006213;
+    float m1_int = 0.1276;
+    float m3_slope = 0.006224;
+    float m3_int = 0.1053;
+#elif MBOT_ID == MWU
+    // Values without LIDAR on top
+    float m1_slope = -0.00580285;
+    float m1_int = 0.11208425;
+    float m3_slope = 0.00576415; 
+    float m3_int = 0.1011394;
+#elif MBOT_ID == WHU
+    // TODO: put value after cali
+    float m1_slope = 0;
+    float m1_int = 0;
+    float m3_slope = 0;
+    float m3_int = 0;
+#endif
+
+// switch(MBOT_ID){
+//     case(SPARHAM):
+//         m1_slope = -0.006213;
+//         m1_int = 0.1276;
+//         m3_slope = 0.006224;
+//         m3_int = 0.1053;
+//         break;
+//     case(MWU):
+            // // Values without LIDAR on top
+            // m1_slope = -0.00580285;
+            // m1_int = 0.11208425;
+            // m3_slope = 0.00576415; 
+            // m3_int = 0.1011394;
+//         break;
+//     case(WHU):
+            // TODO: put value after cali
+            // m1_slope = 0;
+            // m1_int = 0;
+            // m3_slope = 0;
+            // m3_int = 0;
+//         break;
+// }
 
 void timestamp_cb(timestamp_t *received_timestamp)
 {
@@ -191,8 +239,8 @@ bool timer_cb(repeating_timer_t *rt)
         float delta_x = delta_d * cos(current_odom.theta + delta_theta/2);
         float delta_y = delta_d * sin(current_odom.theta + delta_theta/2);
         current_odom.theta = clamp_angle(current_odom.theta + delta_theta);
-        current_odom.x += delta_x;
-        current_odom.y += delta_y;
+        current_odom.x += delta_s_r; //delta_x
+        current_odom.y += delta_s_l; //delta_y
         current_odom.utime = cur_pico_time;
         
         /*************************************************************
@@ -216,7 +264,13 @@ bool timer_cb(repeating_timer_t *rt)
                  *      - Determine the setpoint velocities for left and right motor using the wheel velocity model
                  *      - To compute the measured velocities, use dt as the timestep (∆t)
                  ************************************************************/
-
+                
+                left_sp = current_cmd.trans_v - current_cmd.angular_v/2;
+                right_sp = current_cmd.trans_v + current_cmd.angular_v/2;
+              
+               
+                l_duty = check_sign(m1_slope*left_sp)*(fabs(m1_slope*left_sp) + fabs(m1_int));
+                r_duty = check_sign(m3_slope*right_sp)*(fabs(m3_slope*right_sp) + fabs(m3_int));
                 /*************************************************************
                  * End of TODO
                  *************************************************************/
@@ -429,14 +483,34 @@ float clamp_duty(float duty)
  */
 float clamp_angle(float angle)
 {
-    if (angle > 2*M_PI)
+    if (angle > 2*PI)
     {
-        return angle-2*M_PI;
+        return fmod(angle,2*PI);
     }
     else if (angle < 0)
     {
-        return 2*M_PI-angle;
+        return 2*PI-(fmod(angle,2*PI));
     }
     return angle;
 }
 
+/**
+ * @brief Takes the sign of a number
+ *
+ * @param num
+ */
+float check_sign(float num)
+{
+    if (num > 0.0)
+    {
+        return 1.0;
+    }
+    else if (num == 0.0)
+    {
+        return 0.0;
+    }
+    else 
+    {
+        return -1.0;
+    }
+}

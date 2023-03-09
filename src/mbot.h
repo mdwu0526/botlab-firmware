@@ -67,6 +67,8 @@ float clamp_duty(float duty);
 
 float clamp_angle(float angle);
 
+float check_sign(float num);
+
 // data to hold the IMU results
 mbot_imu_t current_imu = {0};
 // data to hold the received timestamp

@@ -170,7 +170,7 @@ int main()
 
     while (running)
     {
-        int asdf;
+        // int asdf;
     }
 }
 

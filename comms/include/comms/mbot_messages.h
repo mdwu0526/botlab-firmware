@@ -20,6 +20,12 @@ enum message_topics{
     RESET_ENCODERS = 242
 };
 
+enum mbot_numbers{
+    SPARHAM = 44,
+    MWU = 48,
+    WHU = 1
+};
+
 typedef struct timestamp{
     uint64_t utime; // timestamp
 } timestamp_t;

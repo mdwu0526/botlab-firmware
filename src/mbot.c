@@ -184,9 +184,9 @@ bool timer_cb(repeating_timer_t *rt)
         delta_s_l = enc_delta_l*enc2meters;
         delta_theta = (delta_s_r - delta_s_l)/WHEEL_BASE;
         delta_d = (delta_s_r + delta_s_l)/2;
-        float delta_x = delta_d*cos(current_odom.theta+delta_theta/2);
+        float delta_x = delta_d * cos(current_odom.theta + delta_theta/2);
         float delta_y = delta_d * sin(current_odom.theta + delta_theta/2);
-        current_odom.theta += delta_theta;
+        current_odom.theta = clamp_angle(current_odom.theta + delta_theta);
         current_odom.x += delta_x;
         current_odom.y += delta_y;
         current_odom.utime = cur_pico_time;
@@ -417,3 +417,22 @@ float clamp_duty(float duty)
     }
     return duty;
 }
+
+/**
+ * @brief Clamp angle between 0 and 2pi.
+ *
+ * @param angle
+ */
+float clamp_angle(float angle)
+{
+    if (angle > 2*M_PI)
+    {
+        return angle-2*M_PI;
+    }
+    else if (angle < 0)
+    {
+        return 2*M_PI-angle;
+    }
+    return angle;
+}
+

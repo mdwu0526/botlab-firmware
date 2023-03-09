@@ -14,8 +14,8 @@
 void blink();
 
 int main() {
-    FILE *fptr;
-    fptr = fopen("calibration.txt","w");
+    // FILE *fptr;
+    // fptr = fopen("calibration.txt","w");
     const float I_conversion_factor = 2 * 3.3f / (1 << 12);
     const float RPM_conversion_factor = 60.0 / (GEAR_RATIO * TIMESTEP_S * ENCODER_RESOLUTION);
     gpio_init(PICO_DEFAULT_LED_PIN);
@@ -27,12 +27,12 @@ int main() {
     rc_motor_init();
     rc_encoder_init();
     blink();
-    fprintf(fptr,"\nTesting motor 1...\n");
+    printf("\nTesting motor 1...\n");
     int32_t d = 0;
     int encoder_reading;
     float current_reading;
     float wheel_speed;
-    fprintf(fptr,"\nDuty\tSpeed\tCurrent\n");
+    printf("\nDuty\tSpeed\tCurrent\n");
     adc_select_input(0);
     for (; d < INT_16_MAX; d += INT_16_MAX/NUM_POINTS) {
         rc_motor_set(1, d);
@@ -42,15 +42,15 @@ int main() {
         for(int i=0; i<10; i++){
             current_reading += I_conversion_factor * adc_read()/10;
         }
-        fprintf(fptr,"%f\t%f\t%f\n", (float)d/(float)INT_16_MAX, wheel_speed, current_reading);
+        printf("%f\t%f\t%f\n", (float)d/(float)INT_16_MAX, wheel_speed, current_reading);
         sleep_ms(1000*TIMESTEP_S);
     }
     rc_motor_set(1, 0);
     d = 0;
     sleep_ms(3000);
     adc_select_input(2);
-    fprintf(fptr,"\nTesting motor 3...\n");
-    fprintf(fptr,"\nDuty\tSpeed\tCurrent\n");
+    printf("\nTesting motor 3...\n");
+    printf("\nDuty\tSpeed\tCurrent\n");
     for (; d < INT_16_MAX; d += INT_16_MAX/NUM_POINTS) {
         rc_motor_set(3, d);
         encoder_reading = -rc_encoder_read_delta(3);
@@ -59,16 +59,16 @@ int main() {
         for(int i=0; i<10; i++){
             current_reading += I_conversion_factor * adc_read()/10;
         }
-        fprintf(fptr,"%f\t%f\t%f\n", (float)d/(float)INT_16_MAX, wheel_speed, current_reading);
+        printf("%f\t%f\t%f\n", (float)d/(float)INT_16_MAX, wheel_speed, current_reading);
         sleep_ms(1000*TIMESTEP_S);
     }
     
     blink();
-    fprintf(fptr,"\nDone!\n");
+    printf("\nDone!\n");
     
     rc_motor_cleanup(); 
     blink();
-    fclose(fptr);
+    // fclose(fptr);
     return 0;
 }
 

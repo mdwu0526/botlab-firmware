@@ -1,4 +1,4 @@
 .DS_Store
 build
 .vscode
-mbot_diff_defs.h
+rc/defs/mbot_diff_defs.h

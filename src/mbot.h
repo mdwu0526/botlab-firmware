@@ -69,6 +69,10 @@ float clamp_angle(float angle);
 
 float check_sign(float num);
 
+float open_loop_control(int MOTOR_CHANNEL, float RPM_SPEED);
+
+float pid_control(float SET_SPEED, float MEASURED_SPEED, rc_filter_t *input_f, rc_filter_t *integrator, rc_filter_t *pid);
+
 // data to hold the IMU results
 mbot_imu_t current_imu = {0};
 // data to hold the received timestamp
@@ -97,6 +101,11 @@ rc_filter_t left_pid;
 rc_filter_t right_pid;
 rc_filter_t fwd_vel_pid;
 rc_filter_t turn_vel_pid;
+
+// Additional Filters for PID Control
+rc_filter_t setpoint;
+rc_filter_t left_pid_integrator;
+rc_filter_t right_pid_integrator;
 
 pid_parameters_t left_pid_params = {
     .kp = 1.0,

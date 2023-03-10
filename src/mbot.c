@@ -34,7 +34,9 @@ static rc_mpu_data_t mpu_data;
 uint64_t timestamp_offset = 0;
 uint64_t current_pico_time = 0;
 
-float enc2meters = ((2.0 * PI * WHEEL_RADIUS) / (GEAR_RATIO * ENCODER_RES));
+const float enc2meters = ((2.0 * PI * WHEEL_RADIUS) / (GEAR_RATIO * ENCODER_RES));
+const float rad2RPM = 60 / (2.0 * PI); // Converts rad/s to RPM
+const float RPM2rad = 1/rad2RPM; // Converts from RPM to rad/s
 
 void timestamp_cb(timestamp_t *received_timestamp)
 {
@@ -217,12 +219,16 @@ bool timer_cb(repeating_timer_t *rt)
                  *      - To compute the measured velocities, use dt as the timestep (∆t)
                  ************************************************************/
                 
-                left_sp = current_cmd.trans_v - current_cmd.angular_v/2;
-                right_sp = current_cmd.trans_v + current_cmd.angular_v/2;
-              
-               
-                l_duty = check_sign(M1_SLOPE*left_sp)*(fabs(M1_SLOPE*left_sp) + fabs(M1_INT));
-                r_duty = check_sign(M3_SLOPE*right_sp)*(fabs(M3_SLOPE*right_sp) + fabs(M3_INT));
+                // Convert setpoint velocities into RPM
+                left_sp = rad2RPM*(current_cmd.trans_v - current_cmd.angular_v/2*WHEEL_BASE)/WHEEL_RADIUS;
+                right_sp = rad2RPM*(current_cmd.trans_v + current_cmd.angular_v/2*WHEEL_BASE)/WHEEL_RADIUS;
+
+                // Calibration curve takes in RPM and outputs Duty Cycle [0,1]
+                l_duty = open_loop_control(LEFT_MOTOR_CHANNEL,left_sp);
+                r_duty = open_loop_control(RIGHT_MOTOR_CHANNEL,right_sp);
+
+                measured_vel_l = delta_s_l/dt; // Displacement/time [m/s]
+                measured_vel_r = delta_s_r/dt; // Displacement/time [m/s]
                 /*************************************************************
                  * End of TODO
                  *************************************************************/
@@ -252,6 +258,17 @@ bool timer_cb(repeating_timer_t *rt)
                  ************************************************************/
                 float fwd_sp, turn_sp;                     // forward and turn setpoints in m/s and rad/s
                 float measured_vel_fwd, measured_vel_turn; // measured forward and turn velocities in m/s and rad/s
+                
+                // Convert setpoint velocities into RPM
+                left_sp = rad2RPM*(current_cmd.trans_v - current_cmd.angular_v/2*WHEEL_BASE)/WHEEL_RADIUS;
+                right_sp = rad2RPM*(current_cmd.trans_v + current_cmd.angular_v/2*WHEEL_BASE)/WHEEL_RADIUS;
+
+                // Convert measured velocity from m/s to RPM
+                measured_vel_l = (delta_s_l/dt)/WHEEL_RADIUS*rad2RPM;
+                measured_vel_r = (delta_s_r/dt)/WHEEL_RADIUS*rad2RPM;
+
+                float controller_effort_l = pid_control(left_sp,measured_vel_l,&setpoint,&left_pid_integrator,&left_pid);
+                float controller_effort_r = pid_control(right_sp,measured_vel_r,&setpoint,&right_pid_integrator,&right_pid);
 
                 /**
                  *  Example closed loop controller
@@ -391,6 +408,30 @@ int main()
     // Example of setting limits to the output of the filter
     // rc_filter_enable_saturation(&my_filter, min_val, max_val);
 
+    setpoint = rc_filter_empty();
+    float setpoint_tc = 1.0; // 1 Second time constant
+    rc_filter_first_order_lowpass(&setpoint,MAIN_LOOP_PERIOD,setpoint_tc);
+
+    // Configure left and right PID filters
+    left_pid = rc_filter_empty();
+    right_pid = rc_filter_empty();
+    left_pid_integrator = rc_filter_empty();
+    right_pid_integrator = rc_filter_empty();
+
+    // Configures the integral part of the PID controller separately to incorporate saturation
+    rc_filter_integrator(&left_pid_integrator,MAIN_LOOP_PERIOD);
+    rc_filter_integrator(&right_pid_integrator,MAIN_LOOP_PERIOD);
+    
+    // Configurator the saturator for the integrators
+    float SAT_MIN = 0;
+    float SAT_MAX = 1;
+    rc_filter_enable_saturation(&left_pid_integrator,SAT_MIN,SAT_MAX);
+    rc_filter_enable_saturation(&right_pid_integrator,SAT_MIN,SAT_MAX);
+
+    // Integral gains are set to 0 because there is a separate filter to handle the integral gain
+    rc_filter_pid(&left_pid,left_pid_params.kp,0,left_pid_params.kd,1.0/left_pid_params.dFilterHz,MAIN_LOOP_PERIOD);
+    rc_filter_pid(&right_pid,right_pid_params.kp,0,right_pid_params.kd,1.0/right_pid_params.dFilterHz,MAIN_LOOP_PERIOD);
+
     /*************************************************************
      * End of TODO
      *************************************************************/
@@ -465,4 +506,49 @@ float check_sign(float num)
     {
         return -1.0;
     }
+}
+
+/**
+ * @brief Open loop controller for MBot
+ * Takes in speed variable in RPM and returns duty cycle [0,1]
+ *
+ * @param MOTOR_CHANNEL
+ * @param RPM_SPEED
+ * 
+ */
+float open_loop_control(int MOTOR_CHANNEL, float RPM_SPEED){
+    float val = 0;
+    if(MOTOR_CHANNEL == LEFT_MOTOR_CHANNEL){
+        val = check_sign(M1_SLOPE*RPM_SPEED)*(fabs(M1_SLOPE*RPM_SPEED) + fabs(M1_INT));
+    }
+    else if(MOTOR_CHANNEL == RIGHT_MOTOR_CHANNEL){
+        val = check_sign(M3_SLOPE*RPM_SPEED)*(fabs(M3_SLOPE*RPM_SPEED) + fabs(M3_INT));
+    }
+    return val;
+}
+
+/**
+ * @brief PID controller for MBot to control individual wheel velocities
+ * Takes in setpoint speed and measured speed in RPM and returns duty cycle [0,1]
+ *
+ * @param MOTOR_CHANNEL
+ * @param RPM_SPEED
+ * @param MEASURED_SPEED
+ * @param input_f
+ * @param integrator
+ * @param pid
+ * 
+ */
+float pid_control(float SET_SPEED, float MEASURED_SPEED, rc_filter_t *input_f, rc_filter_t *integrator, rc_filter_t *pid){
+
+    // Pass setpoint through the LPF to smooth out response and prevent the mbot from kicking up every time
+    float filtered_sp = rc_filter_march(input_f,SET_SPEED);
+
+    // Calculate the error between filtered speed and measured velocity
+    float error = filtered_sp-MEASURED_SPEED;
+
+    // Computes the controller effort using feedforward open loop control and PID control
+    float controller_effort = open_loop_control(LEFT_MOTOR_CHANNEL,SET_SPEED) + rc_filter_march(integrator,error) + rc_filter_march(pid,error);
+
+    return controller_effort;
 }

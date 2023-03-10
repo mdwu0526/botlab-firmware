@@ -24,9 +24,6 @@
 // MOTOR 1 = LEFT MOTOR
 // MOTOR 3 = RIGHT MOTOR
 
-// // Set this to determine what calibration constants to use (Open-Loop)
-// #define MBOT_ID MWU // SPARHAM, MWU, WHU
-
 #define LED_PIN 25
 #define MAIN_LOOP_HZ 50.0 // 50 hz loop
 #define MAIN_LOOP_PERIOD (1.0f / MAIN_LOOP_HZ)
@@ -38,51 +35,6 @@ uint64_t timestamp_offset = 0;
 uint64_t current_pico_time = 0;
 
 float enc2meters = ((2.0 * PI * WHEEL_RADIUS) / (GEAR_RATIO * ENCODER_RES));
-
-// // Set calibration constants for open loop controller (OPEN-LOOP)
-// // m1 = left motor, m3 = right motor
-// // float m1_slope, m1_int, m3_slope, m3_int;
-// #if MBOT_ID == SPARHAM
-//     float m1_slope = -0.006213;
-//     float m1_int = 0.1276;
-//     float m3_slope = 0.006224;
-//     float m3_int = 0.1053;
-// #elif MBOT_ID == MWU
-//     // Values without LIDAR on top
-//     float m1_slope = -0.00580285;
-//     float m1_int = 0.11208425;
-//     float m3_slope = 0.00576415; 
-//     float m3_int = 0.1011394;
-// #elif MBOT_ID == WHU
-//     // TODO: put value after cali
-//     float m1_slope = 0;
-//     float m1_int = 0;
-//     float m3_slope = 0;
-//     float m3_int = 0;
-// #endif
-
-// switch(MBOT_ID){
-//     case(SPARHAM):
-//         m1_slope = -0.006213;
-//         m1_int = 0.1276;
-//         m3_slope = 0.006224;
-//         m3_int = 0.1053;
-//         break;
-//     case(MWU):
-            // // Values without LIDAR on top
-            // m1_slope = -0.00580285;
-            // m1_int = 0.11208425;
-            // m3_slope = 0.00576415; 
-            // m3_int = 0.1011394;
-//         break;
-//     case(WHU):
-            // TODO: put value after cali
-            // m1_slope = 0;
-            // m1_int = 0;
-            // m3_slope = 0;
-            // m3_int = 0;
-//         break;
-// }
 
 void timestamp_cb(timestamp_t *received_timestamp)
 {

@@ -24,8 +24,8 @@
 // MOTOR 1 = LEFT MOTOR
 // MOTOR 3 = RIGHT MOTOR
 
-// Set this to determine what calibration constants to use (Open-Loop)
-#define MBOT_ID MWU // SPARHAM, MWU, WHU
+// // Set this to determine what calibration constants to use (Open-Loop)
+// #define MBOT_ID MWU // SPARHAM, MWU, WHU
 
 #define LED_PIN 25
 #define MAIN_LOOP_HZ 50.0 // 50 hz loop
@@ -39,27 +39,27 @@ uint64_t current_pico_time = 0;
 
 float enc2meters = ((2.0 * PI * WHEEL_RADIUS) / (GEAR_RATIO * ENCODER_RES));
 
-// Set calibration constants for open loop controller (OPEN-LOOP)
-// m1 = left motor, m3 = right motor
-// float m1_slope, m1_int, m3_slope, m3_int;
-#if MBOT_ID == SPARHAM
-    float m1_slope = -0.006213;
-    float m1_int = 0.1276;
-    float m3_slope = 0.006224;
-    float m3_int = 0.1053;
-#elif MBOT_ID == MWU
-    // Values without LIDAR on top
-    float m1_slope = -0.00580285;
-    float m1_int = 0.11208425;
-    float m3_slope = 0.00576415; 
-    float m3_int = 0.1011394;
-#elif MBOT_ID == WHU
-    // TODO: put value after cali
-    float m1_slope = 0;
-    float m1_int = 0;
-    float m3_slope = 0;
-    float m3_int = 0;
-#endif
+// // Set calibration constants for open loop controller (OPEN-LOOP)
+// // m1 = left motor, m3 = right motor
+// // float m1_slope, m1_int, m3_slope, m3_int;
+// #if MBOT_ID == SPARHAM
+//     float m1_slope = -0.006213;
+//     float m1_int = 0.1276;
+//     float m3_slope = 0.006224;
+//     float m3_int = 0.1053;
+// #elif MBOT_ID == MWU
+//     // Values without LIDAR on top
+//     float m1_slope = -0.00580285;
+//     float m1_int = 0.11208425;
+//     float m3_slope = 0.00576415; 
+//     float m3_int = 0.1011394;
+// #elif MBOT_ID == WHU
+//     // TODO: put value after cali
+//     float m1_slope = 0;
+//     float m1_int = 0;
+//     float m3_slope = 0;
+//     float m3_int = 0;
+// #endif
 
 // switch(MBOT_ID){
 //     case(SPARHAM):
@@ -239,8 +239,8 @@ bool timer_cb(repeating_timer_t *rt)
         float delta_x = delta_d * cos(current_odom.theta + delta_theta/2);
         float delta_y = delta_d * sin(current_odom.theta + delta_theta/2);
         current_odom.theta = clamp_angle(current_odom.theta + delta_theta);
-        current_odom.x += delta_s_r; //delta_x
-        current_odom.y += delta_s_l; //delta_y
+        current_odom.x += delta_x; // delta_s_r; 
+        current_odom.y += delta_y; // delta_s_l;
         current_odom.utime = cur_pico_time;
         
         /*************************************************************
@@ -269,8 +269,8 @@ bool timer_cb(repeating_timer_t *rt)
                 right_sp = current_cmd.trans_v + current_cmd.angular_v/2;
               
                
-                l_duty = check_sign(m1_slope*left_sp)*(fabs(m1_slope*left_sp) + fabs(m1_int));
-                r_duty = check_sign(m3_slope*right_sp)*(fabs(m3_slope*right_sp) + fabs(m3_int));
+                l_duty = check_sign(M1_SLOPE*left_sp)*(fabs(M1_SLOPE*left_sp) + fabs(M1_INT));
+                r_duty = check_sign(M3_SLOPE*right_sp)*(fabs(M3_SLOPE*right_sp) + fabs(M3_INT));
                 /*************************************************************
                  * End of TODO
                  *************************************************************/

@@ -12,7 +12,7 @@
 #define M1_INT					0.1276    // define your mbot-specific motor 1 intercept (duty cycle to get motor moving)
 #define M3_SLOPE 				0.006224  // define your mbot-specific motor 3 slope (duty cycle / wheel speed)
 #define M3_INT 					0.1053    // define your mbot-specific motor 3 intercept (duty cycle to get motor moving)
-
+// test
 typedef enum mbot_fram_cfg_length_t{
 	WHEEL_CALIBRATION_LEN = 8 * sizeof(float), // 8 floats
 	PID_VALUES_LEN = 20 * sizeof(float), // 20 floats

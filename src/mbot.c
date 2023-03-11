@@ -25,7 +25,7 @@
 // MOTOR 3 = RIGHT MOTOR
 
 #define LED_PIN 25
-#define MAIN_LOOP_HZ 50.0 // 50 hz loop
+#define MAIN_LOOP_HZ 25.0 // 25 hz loop
 #define MAIN_LOOP_PERIOD (1.0f / MAIN_LOOP_HZ)
 
 // data to hold current mpu state
@@ -37,8 +37,8 @@ uint64_t current_pico_time = 0;
 const float enc2meters = ((2.0 * PI * WHEEL_RADIUS) / (GEAR_RATIO * ENCODER_RES));
 const float rad2RPM = 60 / (2.0 * PI); // Converts rad/s to RPM
 const float RPM2rad = 1/rad2RPM; // Converts from RPM to rad/s
-float left_duty;
-float right_duty;
+float left_speed;
+float right_speed;
 float left_error;
 float right_error;
 
@@ -274,8 +274,8 @@ bool timer_cb(repeating_timer_t *rt)
                 l_duty = pid_control(LEFT_MOTOR_CHANNEL,left_sp,measured_vel_l,&left_pid_integrator,&left_pid);
                 r_duty = pid_control(RIGHT_MOTOR_CHANNEL,right_sp,measured_vel_r,&right_pid_integrator,&right_pid);
 
-                left_duty = l_duty;
-                right_duty = r_duty;
+                left_speed = measured_vel_l;
+                right_speed = measured_vel_r;
                 left_error = left_sp-measured_vel_l;
                 right_error = right_sp-measured_vel_r;
 
@@ -456,7 +456,7 @@ int main()
 
     while (running)
     {
-        printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   |  LDUTY  |  RDUTY  |   L_ER   |   R_ER   |\n\r|%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v, left_duty, right_duty, left_error, right_error);
+        printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   |   LSPD   |   RSPD   |   L_ER   |   R_ER   |\n\r|%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v, left_speed, right_speed, left_error, right_error);
     }
 }
 

@@ -30,7 +30,7 @@
 // TODO: Enter the polarity values for your motors and encoders
 #define LEFT_ENC_POL 1
 #define RIGHT_ENC_POL -1
-#define LEFT_MOTOR_POL -1
+#define LEFT_MOTOR_POL 1
 #define RIGHT_MOTOR_POL 1
 
 // TODO: Decide which controller is used, open loop = 1, PID = 0

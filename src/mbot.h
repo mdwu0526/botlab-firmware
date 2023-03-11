@@ -31,13 +31,7 @@
 #define LEFT_ENC_POL 1
 #define RIGHT_ENC_POL -1
 #define LEFT_MOTOR_POL -1
-#define RIGHT_MOTOR_POL -1
-
-// TODO: Populate with calibration data (recommended to generate these for reverse direction as well)
-#define SLOPE_L 1.0
-#define SLOPE_R 1.0
-#define INTERCEPT_L -0.0
-#define INTERCEPT_R -0.0
+#define RIGHT_MOTOR_POL 1
 
 // TODO: Decide which controller is used, open loop = 1, PID = 0
 #define OPEN_LOOP 1

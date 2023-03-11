@@ -423,7 +423,7 @@ int main()
     rc_filter_integrator(&right_pid_integrator,MAIN_LOOP_PERIOD);
     
     // Configurator the saturator for the integrators
-    float SAT_MIN = 0;
+    float SAT_MIN = -1;
     float SAT_MAX = 1;
     rc_filter_enable_saturation(&left_pid_integrator,SAT_MIN,SAT_MAX);
     rc_filter_enable_saturation(&right_pid_integrator,SAT_MIN,SAT_MAX);

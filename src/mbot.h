@@ -34,7 +34,7 @@
 #define RIGHT_MOTOR_POL 1
 
 // TODO: Decide which controller is used, open loop = 1, PID = 0
-#define OPEN_LOOP 1
+#define OPEN_LOOP 0
 
 // data to hold current mpu state (not used)
 static rc_mpu_data_t mpu_data;
@@ -65,7 +65,7 @@ float check_sign(float num);
 
 float open_loop_control(int MOTOR_CHANNEL, float RPM_SPEED);
 
-float pid_control(float SET_SPEED, float MEASURED_SPEED, rc_filter_t *input_f, rc_filter_t *integrator, rc_filter_t *pid);
+float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *pid);
 
 // data to hold the IMU results
 mbot_imu_t current_imu = {0};

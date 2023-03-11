@@ -267,8 +267,8 @@ bool timer_cb(repeating_timer_t *rt)
                 measured_vel_l = (delta_s_l/dt)/WHEEL_RADIUS*rad2RPM;
                 measured_vel_r = (delta_s_r/dt)/WHEEL_RADIUS*rad2RPM;
 
-                float controller_effort_l = pid_control(left_sp,measured_vel_l,&setpoint,&left_pid_integrator,&left_pid);
-                float controller_effort_r = pid_control(right_sp,measured_vel_r,&setpoint,&right_pid_integrator,&right_pid);
+                l_duty = pid_control(LEFT_MOTOR_CHANNEL,left_sp,measured_vel_l,&left_pid_integrator,&left_pid);
+                r_duty = pid_control(RIGHT_MOTOR_CHANNEL,right_sp,measured_vel_r,&right_pid_integrator,&right_pid);
 
                 /**
                  *  Example closed loop controller
@@ -408,9 +408,9 @@ int main()
     // Example of setting limits to the output of the filter
     // rc_filter_enable_saturation(&my_filter, min_val, max_val);
 
-    setpoint = rc_filter_empty();
-    float setpoint_tc = 1.0; // 1 Second time constant
-    rc_filter_first_order_lowpass(&setpoint,MAIN_LOOP_PERIOD,setpoint_tc);
+    // setpoint = rc_filter_empty();
+    // float setpoint_tc = 1.0; // 1 Second time constant
+    // rc_filter_first_order_lowpass(&setpoint,MAIN_LOOP_PERIOD,setpoint_tc);
 
     // Configure left and right PID filters
     left_pid = rc_filter_empty();
@@ -539,16 +539,16 @@ float open_loop_control(int MOTOR_CHANNEL, float RPM_SPEED){
  * @param pid
  * 
  */
-float pid_control(float SET_SPEED, float MEASURED_SPEED, rc_filter_t *input_f, rc_filter_t *integrator, rc_filter_t *pid){
+float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *pid){
 
     // Pass setpoint through the LPF to smooth out response and prevent the mbot from kicking up every time
-    float filtered_sp = rc_filter_march(input_f,SET_SPEED);
+    // float filtered_sp = rc_filter_march(input_f,SET_SPEED);
 
     // Calculate the error between filtered speed and measured velocity
-    float error = filtered_sp-MEASURED_SPEED;
+    float error = SET_SPEED-MEASURED_SPEED;
 
     // Computes the controller effort using feedforward open loop control and PID control
-    float controller_effort = open_loop_control(LEFT_MOTOR_CHANNEL,SET_SPEED) + rc_filter_march(integrator,error) + rc_filter_march(pid,error);
+    float controller_effort = open_loop_control(MOTOR_CHANNEL,SET_SPEED) + rc_filter_march(integrator,error) + rc_filter_march(pid,error);
 
     return controller_effort;
 }

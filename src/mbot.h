@@ -63,7 +63,7 @@ float clamp_angle(float angle);
 
 float check_sign(float num);
 
-float open_loop_control(int MOTOR_CHANNEL, float RPM_SPEED);
+float open_loop_control(int MOTOR_CHANNEL, float SET_SPEED);
 
 float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *pid);
 

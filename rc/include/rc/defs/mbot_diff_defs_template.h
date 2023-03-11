@@ -6,7 +6,7 @@
 #define LEFT_MOTOR_CHANNEL      1
 #define RIGHT_MOTOR_CHANNEL     3
 #define WHEEL_RADIUS            0.04      // change your wheel radius to your specific measurements
-#define WHEEL_BASE              0.165      // change your wheelbase to your specific measurements
+#define WHEEL_BASE              0.16      // change your wheelbase to your specific measurements
 
 #define M1_SLOPE				-0.00580285 		  // define your mbot-specific motor 1 slope (duty cycle / wheel speed)
 #define M1_INT					0.11208425 		  // define your mbot-specific motor 1 intercept (duty cycle to get motor moving)

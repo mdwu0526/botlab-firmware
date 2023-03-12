@@ -440,6 +440,21 @@ int main()
     // Integral gains are set to 0 because there is a separate filter to handle the integral gain
     rc_filter_pid(&left_pid,left_pid_params.kp,0,left_pid_params.kd,1.0/left_pid_params.dFilterHz,MAIN_LOOP_PERIOD);
     rc_filter_pid(&right_pid,right_pid_params.kp,0,right_pid_params.kd,1.0/right_pid_params.dFilterHz,MAIN_LOOP_PERIOD);
+    
+    // initialize the low pass filter and pass the imu data in
+    rc_filter_t lpf = rc_filter_empty();
+    float tc = 0.00001; // Time constant, time it takes to reach 63.4% of the original value
+    rc_filter_first_order_lowpass(&lpf,MAIN_LOOP_PERIOD,tc);
+
+    // initialize the kalman filter
+    rc_kalman_t kf = rc_kalman_empty();
+    rc_matrix_t F;
+    rc_matrix_t G;
+    rc_matrix_t H;
+    rc_matrix_t Q;
+    rc_matrix_t R;
+    rc_matrix_t Pi;
+    rc_kalman_alloc_lin(&kf, F, G, H, Q, R, Pi);
 
     /*************************************************************
      * End of TODO
@@ -561,4 +576,44 @@ float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_f
     float controller_effort = open_loop_control(MOTOR_CHANNEL,SET_SPEED) + rc_filter_march(pid,error); // + rc_filter_march(integrator,error);
 
     return controller_effort;
+}
+
+/**
+ * @brief wheel odometry IMU fusion
+ * Takes in odometry and IMU data, returns robot heading
+ *
+ * @param imu
+ * @param odometry
+ * 
+ */
+float odometry_imu_fusion (mbot_imu_t imu, odometry_t odometry, rc_filter_t lpf, rc_kalman_t kf){
+    
+    // low pass filter for imu data
+    mbot_imu_t imu_filtered;
+    imu_filtered.accel[0] = rc_filter_march(&lpf, imu.accel[0]);
+    imu_filtered.accel[1] = rc_filter_march(&lpf, imu.accel[1]);
+    imu_filtered.accel[2] = rc_filter_march(&lpf, imu.accel[2]);
+    imu_filtered.gyro[0] = rc_filter_march(&lpf, imu.gyro[0]);
+    imu_filtered.gyro[1] = rc_filter_march(&lpf, imu.gyro[1]);
+    imu_filtered.gyro[2] = rc_filter_march(&lpf, imu.gyro[2]);
+
+    // 
+
+    // pass both imu_filter and odemetry to kalman filter
+    /******************
+     * TODO: set the values for kalman filter
+    ******************/
+    // while running, measure sensors, calculate y
+    
+    // update kalman filter
+    rc_kalman_update_lin(&kf, u, y);
+    // calculate new actuator control output u
+    
+    // save u for next loop
+
+
+    rc_kalman_free(&kf);
+
+    float theta_fusion;
+    return theta_fusion;
 }

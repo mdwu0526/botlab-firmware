@@ -65,7 +65,7 @@ float check_sign(float num);
 
 float open_loop_control(int MOTOR_CHANNEL, float SET_SPEED);
 
-float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *pid);
+float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *pid, pid_parameters_t params);
 
 // data to hold the IMU results
 mbot_imu_t current_imu = {0};
@@ -101,17 +101,18 @@ rc_filter_t setpoint;
 rc_filter_t left_pid_integrator;
 rc_filter_t right_pid_integrator;
 
+
 pid_parameters_t left_pid_params = {
-    .kp = 1.0,
-    .ki = 0.0,
-    .kd = 0.0,
-    .dFilterHz = 25.0,
+    .kp = 2.0,
+    .ki = 0.2,
+    .kd = 0,
+    .dFilterHz = 15.0,
 };
 pid_parameters_t right_pid_params = {
-    .kp = 1.0,
-    .ki = 0.0,
-    .kd = 0.0,
-    .dFilterHz = 25.0,
+    .kp = 2.0,
+    .ki = 0.2,
+    .kd = 0,
+    .dFilterHz = 15.0,
 };
 pid_parameters_t fwd_vel_pid_params = {
     .kp = 1.0,

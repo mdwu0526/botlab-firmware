@@ -37,10 +37,14 @@ uint64_t current_pico_time = 0;
 const float enc2meters = ((2.0 * PI * WHEEL_RADIUS) / (GEAR_RATIO * ENCODER_RES));
 const float rad2RPM = 60 / (2.0 * PI); // Converts rad/s to RPM
 const float RPM2rad = 1/rad2RPM; // Converts from RPM to rad/s
+
+// Global constants for reading output
 float left_speed;
 float right_speed;
 float left_error;
 float right_error;
+float measured_f_spd;
+float measured_t_spd;
 
 void timestamp_cb(timestamp_t *received_timestamp)
 {
@@ -271,13 +275,15 @@ bool timer_cb(repeating_timer_t *rt)
                 measured_vel_l = (delta_s_l/dt);
                 measured_vel_r = (delta_s_r/dt);
 
-                l_duty = pid_control(LEFT_MOTOR_CHANNEL,left_sp,measured_vel_l,&left_pid_integrator,&left_pid);
-                r_duty = pid_control(RIGHT_MOTOR_CHANNEL,right_sp,measured_vel_r,&right_pid_integrator,&right_pid);
+                l_duty = pid_control(LEFT_MOTOR_CHANNEL,left_sp,measured_vel_l,&left_pid_integrator,&left_pid,left_pid_params);
+                r_duty = pid_control(RIGHT_MOTOR_CHANNEL,right_sp,measured_vel_r,&right_pid_integrator,&right_pid,right_pid_params);
 
                 left_speed = measured_vel_l;
                 right_speed = measured_vel_r;
                 left_error = left_sp-measured_vel_l;
                 right_error = right_sp-measured_vel_r;
+                measured_f_spd = (measured_vel_l+measured_vel_r)/2;
+                measured_t_spd = (measured_vel_r-measured_vel_l)/WHEEL_BASE*2;
 
                 /**
                  *  Example closed loop controller
@@ -417,9 +423,6 @@ int main()
     // Example of setting limits to the output of the filter
     // rc_filter_enable_saturation(&my_filter, min_val, max_val);
 
-    // setpoint = rc_filter_empty();
-    // float setpoint_tc = 1.0; // 1 Second time constant
-    // rc_filter_first_order_lowpass(&setpoint,MAIN_LOOP_PERIOD,setpoint_tc);
 
     // Configure left and right PID filters
     left_pid = rc_filter_empty();
@@ -456,7 +459,7 @@ int main()
 
     while (running)
     {
-        printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   |   LSPD   |   RSPD   |   L_ER   |   R_ER   |\n\r|%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v, left_speed, right_speed, left_error, right_error);
+        printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   |   LSPD   |   RSPD   |   L_ER   |   R_ER   |   F_SP   |   T_SP   |   HEADG   |\n\r|%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v, left_speed, right_speed, left_error, right_error, measured_f_spd, measured_t_spd, clamp_angle(mpu_data.compass_heading));
     }
 }
 
@@ -527,7 +530,7 @@ float check_sign(float num)
  */
 float open_loop_control(int MOTOR_CHANNEL, float SET_SPEED){
     float val = 0;
-    SET_SPEED = SET_SPEED/WHEEL_RADIUS*rad2RPM; // Convert from m/s to RPM
+    SET_SPEED = SET_SPEED/WHEEL_RADIUS*rad2RPM;
     if(MOTOR_CHANNEL == LEFT_MOTOR_CHANNEL){
         val = check_sign(M1_SLOPE*SET_SPEED)*(fabs(M1_SLOPE*SET_SPEED) + fabs(M1_INT));
     }
@@ -549,7 +552,7 @@ float open_loop_control(int MOTOR_CHANNEL, float SET_SPEED){
  * @param pid
  * 
  */
-float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *pid){
+float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *pid, pid_parameters_t params){
 
     // Pass setpoint through the LPF to smooth out response and prevent the mbot from kicking up every time
     // float filtered_sp = rc_filter_march(input_f,SET_SPEED);
@@ -558,7 +561,7 @@ float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_f
     float error = SET_SPEED-MEASURED_SPEED;
 
     // Computes the controller effort using feedforward open loop control and PID control
-    float controller_effort = open_loop_control(MOTOR_CHANNEL,SET_SPEED) + rc_filter_march(pid,error); // + rc_filter_march(integrator,error);
+    float controller_effort = open_loop_control(MOTOR_CHANNEL,SET_SPEED) + rc_filter_march(pid,error) + params.ki*rc_filter_march(integrator,error); // + rc_filter_march(integrator,error);
 
     return controller_effort;
 }

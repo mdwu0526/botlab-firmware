@@ -47,7 +47,7 @@ float right_error;
 float measured_f_spd;
 float measured_t_spd;
 float heading;
-float theta_odom;
+float theta_odom = 0;
 
 void timestamp_cb(timestamp_t *received_timestamp)
 {
@@ -202,9 +202,9 @@ bool timer_cb(repeating_timer_t *rt)
         delta_d = (delta_s_r + delta_s_l)/2;
         float delta_x = delta_d * cos(current_odom.theta + delta_theta/2);
         float delta_y = delta_d * sin(current_odom.theta + delta_theta/2);
-        theta_odom = clamp_angle(theta_odom + delta_theta); // Theta based on odometry
-        float theta_gyro = clamp_angle(mpu_data.dmp_TaitBryan[2]);
-        current_odom.theta = gyrodometry(theta_gyro,theta_odom,0.15);
+        // theta_odom = clamp_angle(theta_odom + delta_theta); // Theta based on odometry
+        // float theta_gyro = clamp_angle(mpu_data.dmp_TaitBryan[2]);
+        current_odom.theta = clamp_angle(current_odom.theta + delta_theta/2);
         // current_odom.theta = clamp_angle(current_odom.theta + delta_theta);
         current_odom.x += delta_x; // delta_s_r; 
         current_odom.y += delta_y; // delta_s_l;
@@ -431,7 +431,7 @@ int main()
 
     //
     setpoint = rc_filter_empty();
-    float tc = 0.2; // Time constant in seconds
+    float tc = 0.05; // Time constant in seconds
     rc_filter_first_order_lowpass(&setpoint,MAIN_LOOP_PERIOD,tc);
 
     // Configure left and right PID filters
@@ -580,7 +580,7 @@ float open_loop_control(int MOTOR_CHANNEL, float SET_SPEED){
 float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *input_f, rc_filter_t *pid, pid_parameters_t params){
 
     // Pass setpoint through the LPF to smooth out response and prevent the mbot from kicking up every time
-    float filtered_sp = rc_filter_march(input_f,SET_SPEED);
+    float filtered_sp = SET_SPEED;//rc_filter_march(input_f,SET_SPEED);
 
     // Calculate the error between filtered speed and measured velocity [m/s]
     float error = filtered_sp-MEASURED_SPEED;

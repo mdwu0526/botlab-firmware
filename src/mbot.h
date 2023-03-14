@@ -67,6 +67,8 @@ float open_loop_control(int MOTOR_CHANNEL, float SET_SPEED);
 
 float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *pid, pid_parameters_t params);
 
+float odometry_imu_fusion (mbot_imu_t imu, odometry_t odometry, rc_filter_t lpf, rc_kalman_t kf);
+
 // data to hold the IMU results
 mbot_imu_t current_imu = {0};
 // data to hold the received timestamp

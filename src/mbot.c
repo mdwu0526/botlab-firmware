@@ -45,6 +45,7 @@ float left_error;
 float right_error;
 float measured_f_spd;
 float measured_t_spd;
+float heading;
 
 void timestamp_cb(timestamp_t *received_timestamp)
 {
@@ -423,6 +424,10 @@ int main()
     // Example of setting limits to the output of the filter
     // rc_filter_enable_saturation(&my_filter, min_val, max_val);
 
+    //
+    setpoint = rc_filter_empty();
+    float tc = 0.2; // Time constant in seconds
+    rc_filter_first_order_lowpass(&setpoint,tc);
 
     // Configure left and right PID filters
     left_pid = rc_filter_empty();
@@ -444,20 +449,20 @@ int main()
     rc_filter_pid(&left_pid,left_pid_params.kp,0,left_pid_params.kd,1.0/left_pid_params.dFilterHz,MAIN_LOOP_PERIOD);
     rc_filter_pid(&right_pid,right_pid_params.kp,0,right_pid_params.kd,1.0/right_pid_params.dFilterHz,MAIN_LOOP_PERIOD);
     
-    // initialize the low pass filter and pass the imu data in
-    rc_filter_t lpf = rc_filter_empty();
-    float tc = 0.00001; // Time constant, time it takes to reach 63.4% of the original value
-    rc_filter_first_order_lowpass(&lpf,MAIN_LOOP_PERIOD,tc);
+    // // initialize the low pass filter and pass the imu data in
+    // rc_filter_t lpf = rc_filter_empty();
+    // float tc = 0.00001; // Time constant, time it takes to reach 63.4% of the original value
+    // rc_filter_first_order_lowpass(&lpf,MAIN_LOOP_PERIOD,tc);
 
-    // initialize the kalman filter
-    rc_kalman_t kf = rc_kalman_empty();
-    rc_matrix_t F;
-    rc_matrix_t G;
-    rc_matrix_t H;
-    rc_matrix_t Q;
-    rc_matrix_t R;
-    rc_matrix_t Pi;
-    rc_kalman_alloc_lin(&kf, F, G, H, Q, R, Pi);
+    // // initialize the kalman filter
+    // rc_kalman_t kf = rc_kalman_empty();
+    // rc_matrix_t F;
+    // rc_matrix_t G;
+    // rc_matrix_t H;
+    // rc_matrix_t Q;
+    // rc_matrix_t R;
+    // rc_matrix_t Pi;
+    // rc_kalman_alloc_lin(&kf, F, G, H, Q, R, Pi);
 
     /*************************************************************
      * End of TODO

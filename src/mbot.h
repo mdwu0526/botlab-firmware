@@ -65,7 +65,9 @@ float check_sign(float num);
 
 float open_loop_control(int MOTOR_CHANNEL, float SET_SPEED);
 
-float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *pid, pid_parameters_t params);
+float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *input_f, rc_filter_t *pid, pid_parameters_t params);
+
+float gyrodometry(float MPU_HEADING, float ODOM_HEADING, float THRESHOLD);
 
 float odometry_imu_fusion (mbot_imu_t imu, odometry_t odometry, rc_filter_t lpf, rc_kalman_t kf);
 

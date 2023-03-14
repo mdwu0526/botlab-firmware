@@ -15,6 +15,7 @@
 #include <comms/listener.h>
 #include <comms/topic_data.h>
 #include <comms/mbot_messages.h>
+#include <rc/math/kalman.h>
 
 #include <math.h>
 #include <inttypes.h>
@@ -46,6 +47,7 @@ float right_error;
 float measured_f_spd;
 float measured_t_spd;
 float heading;
+float theta_odom;
 
 void timestamp_cb(timestamp_t *received_timestamp)
 {
@@ -184,7 +186,6 @@ bool timer_cb(repeating_timer_t *rt)
         current_encoders.left_delta = enc_delta_l;
         current_encoders.leftticks = enc_cnt_l;
 
-        // compute new odometry
         /*************************************************************
          * TODO:
          *      - Populate the odometry messages.
@@ -201,10 +202,14 @@ bool timer_cb(repeating_timer_t *rt)
         delta_d = (delta_s_r + delta_s_l)/2;
         float delta_x = delta_d * cos(current_odom.theta + delta_theta/2);
         float delta_y = delta_d * sin(current_odom.theta + delta_theta/2);
-        current_odom.theta = clamp_angle(current_odom.theta + delta_theta);
+        theta_odom = clamp_angle(theta_odom + delta_theta); // Theta based on odometry
+        float theta_gyro = clamp_angle(mpu_data.dmp_TaitBryan[2]);
+        current_odom.theta = gyrodometry(theta_gyro,theta_odom,0.15);
+        // current_odom.theta = clamp_angle(current_odom.theta + delta_theta);
         current_odom.x += delta_x; // delta_s_r; 
         current_odom.y += delta_y; // delta_s_l;
         current_odom.utime = cur_pico_time;
+        heading = current_odom.theta;
         
         /*************************************************************
          * End of TODO
@@ -276,8 +281,8 @@ bool timer_cb(repeating_timer_t *rt)
                 measured_vel_l = (delta_s_l/dt);
                 measured_vel_r = (delta_s_r/dt);
 
-                l_duty = pid_control(LEFT_MOTOR_CHANNEL,left_sp,measured_vel_l,&left_pid_integrator,&left_pid,left_pid_params);
-                r_duty = pid_control(RIGHT_MOTOR_CHANNEL,right_sp,measured_vel_r,&right_pid_integrator,&right_pid,right_pid_params);
+                l_duty = pid_control(LEFT_MOTOR_CHANNEL,left_sp,measured_vel_l,&left_pid_integrator,&setpoint,&left_pid,left_pid_params);
+                r_duty = pid_control(RIGHT_MOTOR_CHANNEL,right_sp,measured_vel_r,&right_pid_integrator,&setpoint,&right_pid,right_pid_params);
 
                 left_speed = measured_vel_l;
                 right_speed = measured_vel_r;
@@ -427,7 +432,7 @@ int main()
     //
     setpoint = rc_filter_empty();
     float tc = 0.2; // Time constant in seconds
-    rc_filter_first_order_lowpass(&setpoint,tc);
+    rc_filter_first_order_lowpass(&setpoint,MAIN_LOOP_PERIOD,tc);
 
     // Configure left and right PID filters
     left_pid = rc_filter_empty();
@@ -479,7 +484,7 @@ int main()
 
     while (running)
     {
-        printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   |   LSPD   |   RSPD   |   L_ER   |   R_ER   |   F_SP   |   T_SP   |   HEADG   |\n\r|%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v, left_speed, right_speed, left_error, right_error, measured_f_spd, measured_t_spd, clamp_angle(mpu_data.compass_heading));
+        printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   |   LSPD   |   RSPD   |   L_ER   |   R_ER   |   F_SP   |   T_SP   |   HEADG   |\n\r|%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v, left_speed, right_speed, left_error, right_error, measured_f_spd, measured_t_spd, heading);
     }
 }
 
@@ -572,18 +577,37 @@ float open_loop_control(int MOTOR_CHANNEL, float SET_SPEED){
  * @param pid
  * 
  */
-float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *pid, pid_parameters_t params){
+float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *input_f, rc_filter_t *pid, pid_parameters_t params){
 
     // Pass setpoint through the LPF to smooth out response and prevent the mbot from kicking up every time
-    // float filtered_sp = rc_filter_march(input_f,SET_SPEED);
+    float filtered_sp = rc_filter_march(input_f,SET_SPEED);
 
     // Calculate the error between filtered speed and measured velocity [m/s]
-    float error = SET_SPEED-MEASURED_SPEED;
+    float error = filtered_sp-MEASURED_SPEED;
 
     // Computes the controller effort using feedforward open loop control and PID control
-    float controller_effort = open_loop_control(MOTOR_CHANNEL,SET_SPEED) + rc_filter_march(pid,error) + params.ki*rc_filter_march(integrator,error); // + rc_filter_march(integrator,error);
+    float controller_effort = open_loop_control(MOTOR_CHANNEL,filtered_sp) + rc_filter_march(pid,error) + params.ki*rc_filter_march(integrator,error); // + rc_filter_march(integrator,error);
 
     return controller_effort;
+}
+
+/**
+ * @brief Fuses the gyro reading as well as the odometry heading
+ * SIMPLE IMPLEMENTATION
+ *
+ * @param MPU_HEADING
+ * @param ODOM_HEADING
+ * 
+ */
+float gyrodometry(float MPU_HEADING, float ODOM_HEADING, float THRESHOLD){
+    float new_heading;
+    if(fabs(MPU_HEADING - ODOM_HEADING) < THRESHOLD){
+        new_heading = ODOM_HEADING;
+    }
+    else{
+        new_heading = MPU_HEADING;
+    }
+    return new_heading;
 }
 
 /**
@@ -594,34 +618,34 @@ float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_f
  * @param odometry
  * 
  */
-float odometry_imu_fusion (mbot_imu_t imu, odometry_t odometry, rc_filter_t lpf, rc_kalman_t kf){
+// float odometry_imu_fusion (mbot_imu_t *imu, odometry_t *odometry, rc_filter_t *lpf, rc_kalman_t *kf){
     
-    // low pass filter for imu data
-    mbot_imu_t imu_filtered;
-    imu_filtered.accel[0] = rc_filter_march(&lpf, imu.accel[0]);
-    imu_filtered.accel[1] = rc_filter_march(&lpf, imu.accel[1]);
-    imu_filtered.accel[2] = rc_filter_march(&lpf, imu.accel[2]);
-    imu_filtered.gyro[0] = rc_filter_march(&lpf, imu.gyro[0]);
-    imu_filtered.gyro[1] = rc_filter_march(&lpf, imu.gyro[1]);
-    imu_filtered.gyro[2] = rc_filter_march(&lpf, imu.gyro[2]);
+//     // low pass filter for imu data
+//     mbot_imu_t imu_filtered;
+//     imu_filtered.accel[0] = rc_filter_march(&lpf, imu.accel[0]);
+//     imu_filtered.accel[1] = rc_filter_march(&lpf, imu.accel[1]);
+//     imu_filtered.accel[2] = rc_filter_march(&lpf, imu.accel[2]);
+//     imu_filtered.gyro[0] = rc_filter_march(&lpf, imu.gyro[0]);
+//     imu_filtered.gyro[1] = rc_filter_march(&lpf, imu.gyro[1]);
+//     imu_filtered.gyro[2] = rc_filter_march(&lpf, imu.gyro[2]);
 
-    // 
+//     // 
 
-    // pass both imu_filter and odemetry to kalman filter
-    /******************
-     * TODO: set the values for kalman filter
-    ******************/
-    // while running, measure sensors, calculate y
+//     // pass both imu_filter and odemetry to kalman filter
+//     /******************
+//      * TODO: set the values for kalman filter
+//     ******************/
+//     // while running, measure sensors, calculate y
     
-    // update kalman filter
-    rc_kalman_update_lin(&kf, u, y);
-    // calculate new actuator control output u
+//     // update kalman filter
+//     rc_kalman_update_lin(&kf, u, y);
+//     // calculate new actuator control output u
     
-    // save u for next loop
+//     // save u for next loop
 
 
-    rc_kalman_free(&kf);
+//     rc_kalman_free(&kf);
 
-    float theta_fusion;
-    return theta_fusion;
-}
+//     float theta_fusion;
+//     return theta_fusion;
+// }

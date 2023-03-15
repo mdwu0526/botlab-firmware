@@ -44,6 +44,8 @@ float left_speed;
 float right_speed;
 float left_error;
 float right_error;
+float left_duty;
+float right_duty;
 float measured_f_spd;
 float measured_t_spd;
 float heading;
@@ -204,7 +206,7 @@ bool timer_cb(repeating_timer_t *rt)
         float delta_y = delta_d * sin(current_odom.theta + delta_theta/2);
         // theta_odom = clamp_angle(theta_odom + delta_theta); // Theta based on odometry
         // float theta_gyro = clamp_angle(mpu_data.dmp_TaitBryan[2]);
-        current_odom.theta = clamp_angle(current_odom.theta + delta_theta/2);
+        current_odom.theta = clamp_angle(current_odom.theta + delta_theta);
         // current_odom.theta = clamp_angle(current_odom.theta + delta_theta);
         current_odom.x += delta_x; // delta_s_r; 
         current_odom.y += delta_y; // delta_s_l;
@@ -234,8 +236,8 @@ bool timer_cb(repeating_timer_t *rt)
                  ************************************************************/
                 
                 // Convert setpoint velocities into m/s
-                left_sp = (current_cmd.trans_v - current_cmd.angular_v/2*WHEEL_BASE);
-                right_sp = (current_cmd.trans_v + current_cmd.angular_v/2*WHEEL_BASE);
+                left_sp = (current_cmd.trans_v - current_cmd.angular_v*(WHEEL_BASE/2));
+                right_sp = (current_cmd.trans_v + current_cmd.angular_v*(WHEEL_BASE/2));
 
                 // Calibration curve takes in m/s and outputs Duty Cycle [0,1]
                 l_duty = open_loop_control(LEFT_MOTOR_CHANNEL,left_sp);
@@ -274,8 +276,8 @@ bool timer_cb(repeating_timer_t *rt)
                 float measured_vel_fwd, measured_vel_turn; // measured forward and turn velocities in m/s and rad/s
                 
                 // Convert setpoint velocities into m/s
-                left_sp = (current_cmd.trans_v - current_cmd.angular_v/2*WHEEL_BASE);
-                right_sp = (current_cmd.trans_v + current_cmd.angular_v/2*WHEEL_BASE);
+                left_sp = (current_cmd.trans_v - current_cmd.angular_v*(WHEEL_BASE/2));
+                right_sp = (current_cmd.trans_v + current_cmd.angular_v*(WHEEL_BASE/2));
 
                 // Convert measured velocity to m/s
                 measured_vel_l = (delta_s_l/dt);
@@ -289,7 +291,9 @@ bool timer_cb(repeating_timer_t *rt)
                 left_error = left_sp-measured_vel_l;
                 right_error = right_sp-measured_vel_r;
                 measured_f_spd = (measured_vel_l+measured_vel_r)/2;
-                measured_t_spd = (measured_vel_r-measured_vel_l)/WHEEL_BASE*2;
+                measured_t_spd = (measured_vel_r-measured_vel_l)/WHEEL_BASE;
+                left_duty = l_duty;
+                right_duty = r_duty;
 
                 /**
                  *  Example closed loop controller

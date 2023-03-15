@@ -107,16 +107,16 @@ rc_filter_t right_pid_integrator;
 
 
 pid_parameters_t left_pid_params = {
-    .kp = 2.0,
-    .ki = 0.2,
+    .kp = 4.0,
+    .ki = 0.5,
     .kd = 0,
-    .dFilterHz = 15.0,
+    .dFilterHz = MAIN_LOOP_HZ/2,
 };
 pid_parameters_t right_pid_params = {
-    .kp = 2.0,
-    .ki = 0.2,
+    .kp = 4.0,
+    .ki = 0.5,
     .kd = 0,
-    .dFilterHz = 15.0,
+    .dFilterHz = MAIN_LOOP_HZ/2,
 };
 pid_parameters_t fwd_vel_pid_params = {
     .kp = 1.0,

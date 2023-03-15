@@ -206,15 +206,14 @@ bool timer_cb(repeating_timer_t *rt)
         delta_d = (delta_s_r + delta_s_l)/2;
         float delta_x = delta_d * cos(current_odom.theta + delta_theta/2);
         float delta_y = delta_d * sin(current_odom.theta + delta_theta/2);
-        theta_odom = theta_odom + delta_theta; // Theta based on odometry
+        theta_odom = clamp_angle(current_odom.theta + delta_theta); // Theta based on odometry
         theta_gyro = clamp_angle(rc_filter_march(&gyro_integrator,mpu_data.gyro[2])*deg2rad); // Theta based on fused MPU
-        // current_odom.theta = clamp_angle(current_odom.theta + delta_theta);
-        current_odom.theta = current_odom.theta + delta_theta;
+        
         current_odom.x += delta_x; // delta_s_r; 
         current_odom.y += delta_y; // delta_s_l;
         current_odom.utime = cur_pico_time;
-        heading = gyrodometry(theta_gyro,theta_odom,0.15,sensor_fusion_lp,sensor_fusion_hp);
-        
+        heading = theta_odom;
+        current_odom.theta = gyrodometry(theta_gyro,theta_odom,0.15,sensor_fusion_lp,sensor_fusion_hp);
         /*************************************************************
          * End of TODO
          *************************************************************/
@@ -623,14 +622,12 @@ float gyrodometry(float MPU_HEADING, float ODOM_HEADING, float THRESHOLD, rc_fil
 
     // return new_heading;
 
-    float new_heading;
     if(fabs(MPU_HEADING - ODOM_HEADING) < THRESHOLD){
-        new_heading = ODOM_HEADING;
+        return ODOM_HEADING;
     }
     else{
-        new_heading = MPU_HEADING;
+        return MPU_HEADING;
     }
-    return new_heading;
 }
 
 /**

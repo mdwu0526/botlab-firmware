@@ -207,7 +207,7 @@ bool timer_cb(repeating_timer_t *rt)
         float delta_x = delta_d * cos(current_odom.theta + delta_theta/2);
         float delta_y = delta_d * sin(current_odom.theta + delta_theta/2);
         theta_odom = theta_odom + delta_theta; // Theta based on odometry
-        theta_gyro = rc_filter_march(&gyro_integrator,mpu_data.gyro[2])*deg2rad; // Theta based on fused MPU
+        theta_gyro = clamp_angle(rc_filter_march(&gyro_integrator,mpu_data.gyro[2])*deg2rad); // Theta based on fused MPU
         // current_odom.theta = clamp_angle(current_odom.theta + delta_theta);
         current_odom.theta = current_odom.theta + delta_theta;
         current_odom.x += delta_x; // delta_s_r; 
@@ -534,10 +534,12 @@ float clamp_angle(float angle)
     }
     else if (angle < 0)
     {
-        return 2*PI-(fmod(angle,2*PI));
+        return 2*PI+(fmod(angle,2*PI)); // the fmod remainder would be negative, since it's less than 0, so it should be + (-)
     }
     return angle;
 }
+
+
 
 /**
  * @brief Takes the sign of a number
@@ -615,20 +617,20 @@ float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_f
  * 
  */
 float gyrodometry(float MPU_HEADING, float ODOM_HEADING, float THRESHOLD, rc_filter_t lp, rc_filter_t hp){
-    float new_heading;
-    float blend = 0.5;
-    new_heading = rc_filter_march(&lp,ODOM_HEADING)*blend + rc_filter_march(&hp,MPU_HEADING)*(1-blend);
-
-    return new_heading;
-
     // float new_heading;
-    // if(fabs(MPU_HEADING - ODOM_HEADING) < THRESHOLD){
-    //     new_heading = ODOM_HEADING;
-    // }
-    // else{
-    //     new_heading = MPU_HEADING;
-    // }
+    // float blend = 0.5;
+    // new_heading = rc_filter_march(&lp,ODOM_HEADING)*blend + rc_filter_march(&hp,MPU_HEADING)*(1-blend);
+
     // return new_heading;
+
+    float new_heading;
+    if(fabs(MPU_HEADING - ODOM_HEADING) < THRESHOLD){
+        new_heading = ODOM_HEADING;
+    }
+    else{
+        new_heading = MPU_HEADING;
+    }
+    return new_heading;
 }
 
 /**

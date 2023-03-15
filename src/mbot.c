@@ -38,6 +38,7 @@ uint64_t current_pico_time = 0;
 const float enc2meters = ((2.0 * PI * WHEEL_RADIUS) / (GEAR_RATIO * ENCODER_RES));
 const float rad2RPM = 60 / (2.0 * PI); // Converts rad/s to RPM
 const float RPM2rad = 1/rad2RPM; // Converts from RPM to rad/s
+const float deg2rad = PI/180;
 
 // Global constants for reading output
 float left_speed;
@@ -50,6 +51,7 @@ float measured_f_spd;
 float measured_t_spd;
 float heading;
 float theta_odom = 0;
+float theta_gyro = 0;
 
 void timestamp_cb(timestamp_t *received_timestamp)
 {
@@ -204,14 +206,14 @@ bool timer_cb(repeating_timer_t *rt)
         delta_d = (delta_s_r + delta_s_l)/2;
         float delta_x = delta_d * cos(current_odom.theta + delta_theta/2);
         float delta_y = delta_d * sin(current_odom.theta + delta_theta/2);
-        // theta_odom = clamp_angle(theta_odom + delta_theta); // Theta based on odometry
-        // float theta_gyro = clamp_angle(mpu_data.dmp_TaitBryan[2]);
-        current_odom.theta = clamp_angle(current_odom.theta + delta_theta);
+        theta_odom = theta_odom + delta_theta; // Theta based on odometry
+        theta_gyro = rc_filter_march(&gyro_integrator,mpu_data.gyro[2])*deg2rad; // Theta based on fused MPU
         // current_odom.theta = clamp_angle(current_odom.theta + delta_theta);
+        current_odom.theta = current_odom.theta + delta_theta;
         current_odom.x += delta_x; // delta_s_r; 
         current_odom.y += delta_y; // delta_s_l;
         current_odom.utime = cur_pico_time;
-        heading = current_odom.theta;
+        heading = gyrodometry(theta_gyro,theta_odom,0.15,sensor_fusion_lp,sensor_fusion_hp);
         
         /*************************************************************
          * End of TODO
@@ -457,7 +459,16 @@ int main()
     // Integral gains are set to 0 because there is a separate filter to handle the integral gain
     rc_filter_pid(&left_pid,left_pid_params.kp,0,left_pid_params.kd,1.0/left_pid_params.dFilterHz,MAIN_LOOP_PERIOD);
     rc_filter_pid(&right_pid,right_pid_params.kp,0,right_pid_params.kd,1.0/right_pid_params.dFilterHz,MAIN_LOOP_PERIOD);
-    
+
+    gyro_integrator = rc_filter_empty();
+    sensor_fusion_lp = rc_filter_empty();
+    sensor_fusion_hp = rc_filter_empty();
+
+    // TODO: Tune these values for better odometry heading
+    float freq = 2*PI*(2); // 2 Hz crossover frequency 
+    float damp = 1; // Critcally damped 
+    rc_filter_third_order_complement(&sensor_fusion_lp,&sensor_fusion_hp,freq,damp,MAIN_LOOP_PERIOD);
+    rc_filter_integrator(&gyro_integrator,MAIN_LOOP_PERIOD);
     // // initialize the low pass filter and pass the imu data in
     // rc_filter_t lpf = rc_filter_empty();
     // float tc = 0.00001; // Time constant, time it takes to reach 63.4% of the original value
@@ -603,15 +614,21 @@ float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_f
  * @param ODOM_HEADING
  * 
  */
-float gyrodometry(float MPU_HEADING, float ODOM_HEADING, float THRESHOLD){
+float gyrodometry(float MPU_HEADING, float ODOM_HEADING, float THRESHOLD, rc_filter_t lp, rc_filter_t hp){
     float new_heading;
-    if(fabs(MPU_HEADING - ODOM_HEADING) < THRESHOLD){
-        new_heading = ODOM_HEADING;
-    }
-    else{
-        new_heading = MPU_HEADING;
-    }
+    float blend = 0.5;
+    new_heading = rc_filter_march(&lp,ODOM_HEADING)*blend + rc_filter_march(&hp,MPU_HEADING)*(1-blend);
+
     return new_heading;
+
+    // float new_heading;
+    // if(fabs(MPU_HEADING - ODOM_HEADING) < THRESHOLD){
+    //     new_heading = ODOM_HEADING;
+    // }
+    // else{
+    //     new_heading = MPU_HEADING;
+    // }
+    // return new_heading;
 }
 
 /**

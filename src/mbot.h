@@ -67,7 +67,7 @@ float open_loop_control(int MOTOR_CHANNEL, float SET_SPEED);
 
 float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *input_f, rc_filter_t *pid, pid_parameters_t params);
 
-float gyrodometry(float MPU_HEADING, float ODOM_HEADING, float THRESHOLD);
+float gyrodometry(float MPU_HEADING, float ODOM_HEADING, float THRESHOLD, rc_filter_t lp, rc_filter_t hp);
 
 float odometry_imu_fusion (mbot_imu_t imu, odometry_t odometry, rc_filter_t lpf, rc_kalman_t kf);
 
@@ -104,6 +104,11 @@ rc_filter_t turn_vel_pid;
 rc_filter_t setpoint;
 rc_filter_t left_pid_integrator;
 rc_filter_t right_pid_integrator;
+
+// Filter for Sensor Fusion
+rc_filter_t sensor_fusion_lp;
+rc_filter_t sensor_fusion_hp;
+rc_filter_t gyro_integrator;
 
 
 pid_parameters_t left_pid_params = {

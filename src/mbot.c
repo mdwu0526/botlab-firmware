@@ -435,7 +435,7 @@ int main()
 
     //
     setpoint = rc_filter_empty();
-    float tc = 0.05; // Time constant in seconds
+    float tc = 0.02; // Time constant in seconds
     rc_filter_first_order_lowpass(&setpoint,MAIN_LOOP_PERIOD,tc);
 
     // Configure left and right PID filters

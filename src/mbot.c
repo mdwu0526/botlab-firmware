@@ -215,7 +215,6 @@ bool timer_cb(repeating_timer_t *rt)
         current_odom.utime = cur_pico_time;
         current_odom.theta = gyrodometry(theta_gyro,theta_odom,0.125,sensor_fusion_lp,sensor_fusion_hp);
         heading = current_odom.theta;
-        // current_odom.theta = gyrodometry(theta_gyro,theta_odom,0.15,sensor_fusion_lp,sensor_fusion_hp);
         /*************************************************************
          * End of TODO
          *************************************************************/
@@ -279,15 +278,18 @@ bool timer_cb(repeating_timer_t *rt)
                 float measured_vel_fwd, measured_vel_turn; // measured forward and turn velocities in m/s and rad/s
                 
                 // Convert setpoint velocities into m/s
+                // Smooths it out with a LPF
                 left_sp = (current_cmd.trans_v - current_cmd.angular_v*(WHEEL_BASE/2));
                 right_sp = (current_cmd.trans_v + current_cmd.angular_v*(WHEEL_BASE/2));
+                left_sp = rc_filter_march(&setpoint_l,left_sp);
+                right_sp = rc_filter_march(&setpoint_r,right_sp);
 
                 // Convert measured velocity to m/s
                 measured_vel_l = (delta_s_l/dt);
                 measured_vel_r = (delta_s_r/dt);
 
-                l_duty = pid_control(LEFT_MOTOR_CHANNEL,left_sp,measured_vel_l,&left_pid_integrator,&setpoint,&left_pid,left_pid_params);
-                r_duty = pid_control(RIGHT_MOTOR_CHANNEL,right_sp,measured_vel_r,&right_pid_integrator,&setpoint,&right_pid,right_pid_params);
+                l_duty = pid_control(LEFT_MOTOR_CHANNEL,left_sp,measured_vel_l,&left_pid_integrator,&left_pid,left_pid_params);
+                r_duty = pid_control(RIGHT_MOTOR_CHANNEL,right_sp,measured_vel_r,&right_pid_integrator,&right_pid,right_pid_params);
 
                 left_speed = measured_vel_l;
                 right_speed = measured_vel_r;
@@ -437,9 +439,11 @@ int main()
     // rc_filter_enable_saturation(&my_filter, min_val, max_val);
 
     //
-    setpoint = rc_filter_empty();
-    float tc = 0.02; // Time constant in seconds
-    rc_filter_first_order_lowpass(&setpoint,MAIN_LOOP_PERIOD,tc);
+    setpoint_l = rc_filter_empty();
+    setpoint_r = rc_filter_empty();
+    float tc = 0.2; // Time constant in seconds
+    rc_filter_first_order_lowpass(&setpoint_l,MAIN_LOOP_PERIOD,tc);
+    rc_filter_first_order_lowpass(&setpoint_r,MAIN_LOOP_PERIOD,tc);
 
     // Configure left and right PID filters
     left_pid = rc_filter_empty();
@@ -596,16 +600,13 @@ float open_loop_control(int MOTOR_CHANNEL, float SET_SPEED){
  * @param pid
  * 
  */
-float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *input_f, rc_filter_t *pid, pid_parameters_t params){
-
-    // Pass setpoint through the LPF to smooth out response and prevent the mbot from kicking up every time
-    float filtered_sp = SET_SPEED; //rc_filter_march(input_f,SET_SPEED);
+float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *pid, pid_parameters_t params){
 
     // Calculate the error between filtered speed and measured velocity [m/s]
-    float error = filtered_sp-MEASURED_SPEED;
+    float error = SET_SPEED-MEASURED_SPEED;
 
     // Computes the controller effort using feedforward open loop control and PID control
-    float controller_effort = open_loop_control(MOTOR_CHANNEL,filtered_sp) + rc_filter_march(pid,error) + params.ki*rc_filter_march(integrator,error); // + rc_filter_march(integrator,error);
+    float controller_effort = open_loop_control(MOTOR_CHANNEL,SET_SPEED) + rc_filter_march(pid,error) + params.ki*rc_filter_march(integrator,error); // + rc_filter_march(integrator,error);
 
     return controller_effort;
 }

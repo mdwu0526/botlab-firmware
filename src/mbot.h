@@ -65,7 +65,7 @@ float check_sign(float num);
 
 float open_loop_control(int MOTOR_CHANNEL, float SET_SPEED);
 
-float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *input_f, rc_filter_t *pid, pid_parameters_t params);
+float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *pid, pid_parameters_t params);
 
 float gyrodometry(float MPU_HEADING, float ODOM_HEADING, float THRESHOLD, rc_filter_t lp, rc_filter_t hp);
 
@@ -101,7 +101,8 @@ rc_filter_t fwd_vel_pid;
 rc_filter_t turn_vel_pid;
 
 // Additional Filters for PID Control
-rc_filter_t setpoint;
+rc_filter_t setpoint_l;
+rc_filter_t setpoint_r;
 rc_filter_t left_pid_integrator;
 rc_filter_t right_pid_integrator;
 

@@ -37,8 +37,8 @@ uint64_t current_pico_time = 0;
 
 const float enc2meters = ((2.0 * PI * WHEEL_RADIUS) / (GEAR_RATIO * ENCODER_RES));
 const float rad2RPM = 60 / (2.0 * PI); // Converts rad/s to RPM
-const float RPM2rad = 1/rad2RPM; // Converts from RPM to rad/s
-const float deg2rad = PI/180;
+const float RPM2rad = 1 / rad2RPM; // Converts from RPM to rad/s
+const float deg2rad = PI / 180;
 
 // Global constants for reading output
 float left_speed;
@@ -206,14 +206,16 @@ bool timer_cb(repeating_timer_t *rt)
         delta_d = (delta_s_r + delta_s_l)/2;
         float delta_x = delta_d * cos(current_odom.theta + delta_theta/2);
         float delta_y = delta_d * sin(current_odom.theta + delta_theta/2);
-        theta_odom = clamp_angle(current_odom.theta + delta_theta); // Theta based on odometry
-        theta_gyro = clamp_angle(rc_filter_march(&gyro_integrator,mpu_data.gyro[2])*deg2rad); // Theta based on fused MPU
-        
+        //theta_odom = current_odom.theta + delta_theta; // Theta based on odometry
+        theta_odom = clamp_angle(current_odom.theta + delta_theta);
+        //theta_gyro = rc_filter_march(&gyro_integrator,mpu_data.gyro[2])*deg2rad; // Theta based on fused MPU
+        theta_gyro = clamp_angle(rc_filter_march(&gyro_integrator,mpu_data.gyro[2])*deg2rad);
         current_odom.x += delta_x; // delta_s_r; 
         current_odom.y += delta_y; // delta_s_l;
         current_odom.utime = cur_pico_time;
-        heading = theta_odom;
-        current_odom.theta = gyrodometry(theta_gyro,theta_odom,0.15,sensor_fusion_lp,sensor_fusion_hp);
+        current_odom.theta = gyrodometry(theta_gyro,theta_odom,0.125,sensor_fusion_lp,sensor_fusion_hp);
+        heading = current_odom.theta;
+        // current_odom.theta = gyrodometry(theta_gyro,theta_odom,0.15,sensor_fusion_lp,sensor_fusion_hp);
         /*************************************************************
          * End of TODO
          *************************************************************/
@@ -464,10 +466,11 @@ int main()
     sensor_fusion_hp = rc_filter_empty();
 
     // TODO: Tune these values for better odometry heading
-    float freq = 2*PI*(2); // 2 Hz crossover frequency 
-    float damp = 1; // Critcally damped 
-    rc_filter_third_order_complement(&sensor_fusion_lp,&sensor_fusion_hp,freq,damp,MAIN_LOOP_PERIOD);
+    float tc_sensor_fusion = 0.75; // ~ 2Hz Cutoff
+    rc_filter_first_order_lowpass(&sensor_fusion_lp,MAIN_LOOP_PERIOD,tc_sensor_fusion);
+    rc_filter_first_order_highpass(&sensor_fusion_hp,MAIN_LOOP_PERIOD,tc_sensor_fusion);
     rc_filter_integrator(&gyro_integrator,MAIN_LOOP_PERIOD);
+
     // // initialize the low pass filter and pass the imu data in
     // rc_filter_t lpf = rc_filter_empty();
     // float tc = 0.00001; // Time constant, time it takes to reach 63.4% of the original value
@@ -596,7 +599,7 @@ float open_loop_control(int MOTOR_CHANNEL, float SET_SPEED){
 float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_filter_t *integrator, rc_filter_t *input_f, rc_filter_t *pid, pid_parameters_t params){
 
     // Pass setpoint through the LPF to smooth out response and prevent the mbot from kicking up every time
-    float filtered_sp = SET_SPEED;//rc_filter_march(input_f,SET_SPEED);
+    float filtered_sp = SET_SPEED; //rc_filter_march(input_f,SET_SPEED);
 
     // Calculate the error between filtered speed and measured velocity [m/s]
     float error = filtered_sp-MEASURED_SPEED;
@@ -617,8 +620,8 @@ float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_f
  */
 float gyrodometry(float MPU_HEADING, float ODOM_HEADING, float THRESHOLD, rc_filter_t lp, rc_filter_t hp){
     // float new_heading;
-    // float blend = 0.5;
-    // new_heading = rc_filter_march(&lp,ODOM_HEADING)*blend + rc_filter_march(&hp,MPU_HEADING)*(1-blend);
+    // float blend = 0.9;
+    // new_heading = ODOM_HEADING*blend + MPU_HEADING*(1-blend);
 
     // return new_heading;
 

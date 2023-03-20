@@ -502,10 +502,15 @@ int main()
     {
         printf("Running in closed loop mode\n");
     }
-
+    int printMode = 0;
     while (running)
     {
-        printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   |   LSPD   |   RSPD   |   L_ER   |   R_ER   |   F_SP   |   T_SP   |   HEADG   |\n\r|%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v, left_speed, right_speed, left_error, right_error, measured_f_spd, measured_t_spd, heading);
+        if (printMode == 0) {
+            printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   |   LSPD   |   RSPD   |   L_ER   |   R_ER   |   F_SP   |   T_SP   |   HEADG   |\n\r|%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v, left_speed, right_speed, left_error, right_error, measured_f_spd, measured_t_spd, heading);
+        }
+        else {
+            printf("%7.3f, %7.3f, %7.3f\n", current_odom.x, current_odom.y, current_odom.theta);
+        }
     }
 }
 

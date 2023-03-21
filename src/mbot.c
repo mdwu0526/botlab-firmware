@@ -441,7 +441,7 @@ int main()
     //
     setpoint_l = rc_filter_empty();
     setpoint_r = rc_filter_empty();
-    float tc = 0.2; // Time constant in seconds
+    float tc = 0.2; // 0.2 // Time constant in seconds
     rc_filter_first_order_lowpass(&setpoint_l,MAIN_LOOP_PERIOD,tc);
     rc_filter_first_order_lowpass(&setpoint_r,MAIN_LOOP_PERIOD,tc);
 
@@ -456,8 +456,8 @@ int main()
     rc_filter_integrator(&right_pid_integrator,MAIN_LOOP_PERIOD);
     
     // Configurator the saturator for the integrators
-    float SAT_MIN = -1;
-    float SAT_MAX = 1;
+    float SAT_MIN = -1; // -1
+    float SAT_MAX = 1; // 1
     rc_filter_enable_saturation(&left_pid_integrator,SAT_MIN,SAT_MAX);
     rc_filter_enable_saturation(&right_pid_integrator,SAT_MIN,SAT_MAX);
 
@@ -502,7 +502,7 @@ int main()
     {
         printf("Running in closed loop mode\n");
     }
-    int printMode = 0;
+    int printMode = 1;
     while (running)
     {
         if (printMode == 0) {
@@ -510,6 +510,7 @@ int main()
         }
         else {
             printf("%7.3f, %7.3f, %7.3f\n", current_odom.x, current_odom.y, current_odom.theta);
+            sleep_ms(100);
         }
     }
 }

@@ -52,6 +52,7 @@ float measured_t_spd;
 float heading;
 float theta_odom = 0;
 float theta_gyro = 0;
+float I_err;
 
 void timestamp_cb(timestamp_t *received_timestamp)
 {
@@ -465,15 +466,15 @@ int main()
     rc_filter_pid(&left_pid,left_pid_params.kp,0,left_pid_params.kd,1.0/left_pid_params.dFilterHz,MAIN_LOOP_PERIOD);
     rc_filter_pid(&right_pid,right_pid_params.kp,0,right_pid_params.kd,1.0/right_pid_params.dFilterHz,MAIN_LOOP_PERIOD);
 
-    gyro_integrator = rc_filter_empty();
-    sensor_fusion_lp = rc_filter_empty();
-    sensor_fusion_hp = rc_filter_empty();
+    // gyro_integrator = rc_filter_empty();
+    // sensor_fusion_lp = rc_filter_empty();
+    // sensor_fusion_hp = rc_filter_empty();
 
-    // TODO: Tune these values for better odometry heading
-    float tc_sensor_fusion = 0.75; // ~ 2Hz Cutoff
-    rc_filter_first_order_lowpass(&sensor_fusion_lp,MAIN_LOOP_PERIOD,tc_sensor_fusion);
-    rc_filter_first_order_highpass(&sensor_fusion_hp,MAIN_LOOP_PERIOD,tc_sensor_fusion);
-    rc_filter_integrator(&gyro_integrator,MAIN_LOOP_PERIOD);
+    // // TODO: Tune these values for better odometry heading
+    // float tc_sensor_fusion = 0.75; // ~ 2Hz Cutoff
+    // rc_filter_first_order_lowpass(&sensor_fusion_lp,MAIN_LOOP_PERIOD,tc_sensor_fusion);
+    // rc_filter_first_order_highpass(&sensor_fusion_hp,MAIN_LOOP_PERIOD,tc_sensor_fusion);
+    // rc_filter_integrator(&gyro_integrator,MAIN_LOOP_PERIOD);
 
     // // initialize the low pass filter and pass the imu data in
     // rc_filter_t lpf = rc_filter_empty();
@@ -506,10 +507,10 @@ int main()
     while (running)
     {
         if (printMode == 0) {
-            printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   |   LSPD   |   RSPD   |   L_ER   |   R_ER   |   F_SP   |   T_SP   |   HEADG   |\n\r|%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v, left_speed, right_speed, left_error, right_error, measured_f_spd, measured_t_spd, heading);
+            printf("\033[2A\r|      SENSORS      |           ODOMETRY          |     SETPOINTS     |\n\r|  L_ENC  |  R_ENC  |    X    |    Y    |    θ    |   FWD   |   ANG   |   LSPD   |   RSPD   |   L_ER   |   R_ER   |   F_SP   |   T_SP   |   I_ERR   |\n\r|%7lld  |%7lld  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f  |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |%7.3f   |", current_encoders.leftticks, current_encoders.rightticks, current_odom.x, current_odom.y, current_odom.theta, current_cmd.trans_v, current_cmd.angular_v, left_speed, right_speed, left_error, right_error, measured_f_spd, measured_t_spd, heading);
         }
         else {
-            printf("%7.3f, %7.3f, %7.3f\n", current_odom.x, current_odom.y, current_odom.theta);
+            printf("%7.3f, %7.3f, %7.3f, %7.3f\n", current_odom.utime, current_odom.x, current_odom.y, current_odom.theta);
             sleep_ms(100);
         }
     }
@@ -612,7 +613,8 @@ float pid_control(int MOTOR_CHANNEL, float SET_SPEED, float MEASURED_SPEED, rc_f
     float error = SET_SPEED-MEASURED_SPEED;
 
     // Computes the controller effort using feedforward open loop control and PID control
-    float controller_effort = open_loop_control(MOTOR_CHANNEL,SET_SPEED) + rc_filter_march(pid,error) + params.ki*rc_filter_march(integrator,error); // + rc_filter_march(integrator,error);
+    float int_err = params.ki*rc_filter_march(integrator,error);
+    float controller_effort = open_loop_control(MOTOR_CHANNEL,SET_SPEED) + rc_filter_march(pid,error) + int_err; // + rc_filter_march(integrator,error);
 
     return controller_effort;
 }
